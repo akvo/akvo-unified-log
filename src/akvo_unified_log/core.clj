@@ -183,7 +183,7 @@
 (defn -main [settings-file]
   (config/set-settings! settings-file)
   (let [settings @config/settings]
-    (config/reload (:config-folder settings))
+    (config/set-config! (:config-folder settings))
     (json/set-validator! (:event-schema-file settings))
     (let [port (Integer. (:port settings 3030))]
       (jetty/run-jetty (-> #'app

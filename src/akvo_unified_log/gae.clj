@@ -1,6 +1,6 @@
 (ns akvo-unified-log.gae
   (:require [akvo-unified-log.json :as json]
-            [environ.core :refer (env)])
+            [akvo.commons.config :as config])
   (:import [com.google.appengine.tools.remoteapi RemoteApiInstaller RemoteApiOptions]
            [com.google.appengine.api.datastore DatastoreServiceFactory
             Query Query$FilterPredicate Query$FilterOperator Query$SortDirection FetchOptions$Builder]))
@@ -11,8 +11,8 @@
   ([server port]
    (doto (RemoteApiOptions.)
      (.server server port)
-     (.credentials (:remote-api-email env)
-                   (:remote-api-password env)))))
+     (.credentials (:remote-api-email @config/settings)
+                   (:remote-api-password @config/settings)))))
 
 (defn install [options]
   (let [installer (RemoteApiInstaller.)]
