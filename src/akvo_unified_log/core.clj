@@ -182,20 +182,11 @@
 
 (defn -main [settings-file]
   (config/set-settings! settings-file)
-  (config/reload (:config-folder @config/settings))
-  (let [port (Integer. (or (:port @config/settings) 3030))]
-    (jetty/run-jetty (-> #'app
-                         wrap-params
-                         wrap-json-body)
-                     {:port port :join? false})))
-
-
-(comment
-  (config/set-settings! "config.edn")
-  (config/reload (:config-folder @config/settings))
-  (@config/configs "flowaglimmerofhope-hrd")
-  @config/instance-alias
-  @config/settings
-
-
-  )
+  (let [settings @config/settings]
+    (config/reload (:config-folder settings))
+    (json/set-validator! (:event-schema-file settings))
+    (let [port (Integer. (:port settings 3030))]
+      (jetty/run-jetty (-> #'app
+                           wrap-params
+                           wrap-json-body)
+                       {:port port :join? false}))))
