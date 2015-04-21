@@ -67,7 +67,7 @@
 
 (defn last-fetch-date [db-spec]
   (let [ts (first (last-timestamp db-spec))]
-    (java.util.Date. (long (:timestamp ts 0)))))
+    (java.util.Date. (long (or (:timestamp ts) 0)))))
 
 (defn validate-events [events]
   (doseq [event events]
