@@ -173,12 +173,15 @@
         :allowed-methods [:post]
         :known-content-type? json-content-type?
         :post! (fn [ctx]
-                 (doseq [event-string (map generate-string (-> ctx :request :body))]
-                   (let [jsonb (json/jsonb event-string)
-                         json-node (json/json-node event-string)]
-                     (if (json/valid? json-node)
-                       (insert-events (db-spec org-id) [jsonb])
-                       (warnf "Invalid event %s" event-string))))))))
+                 (jdbc/with-db-connection [db-conn (db-spec org-id)]
+                   (doseq [event-string (map generate-string (-> ctx :request :body))]
+                     (let [jsonb (json/jsonb event-string)
+                           json-node (json/json-node event-string)]
+                       (insert-events db-conn [jsonb])
+                       ;; TODO validate
+                       #_(if (json/valid? json-node)
+                         (insert-events db-conn [jsonb])
+                         (warnf "Invalid event %s" event-string)))))))))
 
 (defn -main [settings-file]
   (config/set-settings! settings-file)
