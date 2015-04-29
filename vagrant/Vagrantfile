@@ -3,7 +3,7 @@
 
 Vagrant.configure("2") do |config|
   config.vm.box = "unilog-dev-20150424"
-  config.vm.box_url = "http://files.akvo-ops.org/unilog-dev-20150424.box"
+  config.vm.box_url = "http://files.akvo-ops.org/unilog-dev-20150429.box"
 
   config.vm.synced_folder "../", "/vagrant/unilog/checkout/", 
     :owner => "unilog", 
