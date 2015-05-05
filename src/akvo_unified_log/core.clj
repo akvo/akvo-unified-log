@@ -1,5 +1,6 @@
 (ns akvo-unified-log.core
   (:require [akvo.commons.config :as config]
+            [akvo.commons.gae :as commons-gae]
             [akvo-unified-log.gae :as gae]
             [akvo-unified-log.json :as json]
             [akvo-unified-log.scheduler :as scheduler]
@@ -46,24 +47,32 @@
 
 (defqueries "db.sql")
 
+(defn datastore-spec [instance-url]
+  (let [settings @config/settings]
+    (if (:local-datastore? settings)
+      {} ;; Empty spec uses local datastore
+      {:server instance-url
+       :port 443
+       :email (:remote-api-email settings)
+       :password (:remote-api-password settings)})))
+
 ;; TODO Cache installer so we don't need to re-autheniticate each time
+;;      See RemoteApiOptions javadoc
 ;; TODO Use akvo.commons.gae
 (defn fetch-data [instance-url since]
-  (let [installer (-> instance-url gae/remote-api-options gae/install)
-        ds (gae/datastore)
-        events (->> (gae/fetch-data-iterator ds since 1000)
-                    iterator-seq
-                    (map #(or (.getProperty % "payload")
-                              (.getValue (.getProperty % "payloadText"))))
-                    ;; We need two representations, one for validation/sorting and one for postgres
-                    (map (fn [s]
-                           {:string s
-                            :jsonb (json/jsonb s)
-                            :json-node (json/json-node s)}))
-                    ;; TODO We fetch sorted by createdDateTime so this isn't necessary?
-                    (sort-by #(-> % :json-node (.get "context") (.get "timestamp") .longValue)))]
-    (.uninstall installer)
-    events))
+  (commons-gae/with-datastore [ds (datastore-spec instance-url)]
+    (->> (gae/fetch-data-iterator ds since 1000)
+         iterator-seq
+         (map #(or (.getProperty % "payload")
+                   (.getValue (.getProperty % "payloadText"))))
+         ;; We need two representations, one for validation/sorting and one for postgres
+         (map (fn [s]
+                {:string s
+                 :jsonb (json/jsonb s)
+                 :json-node (json/json-node s)}))
+         ;; TODO We fetch sorted by createdDateTime so this isn't necessary?
+         (sort-by #(-> % :json-node (.get "context") (.get "timestamp") .longValue))
+         vec)))
 
 (defn last-fetch-date [db-spec]
   (let [ts (first (last-timestamp db-spec))]
@@ -175,13 +184,9 @@
         :post! (fn [ctx]
                  (jdbc/with-db-connection [db-conn (db-spec org-id)]
                    (doseq [event-string (map generate-string (-> ctx :request :body))]
-                     (let [jsonb (json/jsonb event-string)
-                           json-node (json/json-node event-string)]
-                       (insert-events db-conn [jsonb])
-                       ;; TODO validate
-                       #_(if (json/valid? json-node)
-                         (insert-events db-conn [jsonb])
-                         (warnf "Invalid event %s" event-string)))))))))
+                     (let [jsonb (json/jsonb event-string)]
+                       ;; TODO validate?
+                       (insert-events db-conn [jsonb]))))))))
 
 (defn -main [settings-file]
   (config/set-settings! settings-file)

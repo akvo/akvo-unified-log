@@ -1,7 +1,8 @@
 (ns akvo-unified-log.json
   (:refer-clojure :exclude (set-validator!))
   (:require [clojure.java.io :as io]
-            [akvo.commons.config :as config])
+            [akvo.commons.config :as config]
+            [taoensso.timbre :refer (debugf infof warnf errorf fatalf error)])
   (:import [java.io FileNotFoundException]
            [org.postgresql.util PGobject]
            [com.github.fge.jsonschema.main JsonSchema JsonSchemaFactory]
@@ -16,8 +17,9 @@
   (.readValue object-mapper s JsonNode))
 
 (defn valid? [json-node]
-  (assert schema-validator "No schema-validator set")
-  (.validInstance schema-validator json-node))
+  (if schema-validator
+    (.validInstance schema-validator json-node)
+    true))
 
 (defn jsonb
   "Create a JSONB object"
@@ -27,8 +29,6 @@
     (.setValue s)))
 
 (defn make-schema-validator [_ root-schema-file]
-  {:pre [(string? root-schema-file)]
-   :post [(instance? JsonSchema %)]}
   (let [file (io/file root-schema-file)
         file-absolute-path (-> file .toURI str)]
     (when-not (.exists file)
@@ -37,4 +37,6 @@
                     file-absolute-path)))
 
 (defn set-validator! [schema-root-file]
-  (alter-var-root #'schema-validator make-schema-validator schema-root-file))
+  (try (alter-var-root #'schema-validator make-schema-validator schema-root-file)
+       (catch Exception e
+         (warnf e "Could not initialize JSON schema validation. Event validation disabled."))))
