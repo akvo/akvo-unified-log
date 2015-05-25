@@ -19,9 +19,11 @@
   "Cancel task for org-id"
   [org-id]
   {:pre [(string? org-id)]}
-  (when-let [task (get @tasks org-id)]
-    (.cancel task false)
-    (swap! tasks dissoc org-id)))
+  (if-let [task (get @tasks org-id)]
+    (if (.cancel task false)
+          (swap! tasks dissoc org-id)
+          (infof "Could not cancel task. Task for %s is not interruptible" org-id))
+    (warnf "Could not cancel task. Task for %s could not be found" org-id)))
 
 (defn running? [org-id]
   {:pre [(string? org-id)]}
