@@ -1,0 +1,98 @@
+{
+    "answer": {
+      "type": "object",
+      "properties": {
+        "type": { "enum": ["ANSWER"]},
+        "answerType": { "enum": ["GEO", "VALUE", "IMAGE", "CASCADE", "DATE", "VIDEO", "OTHER"]},
+        "id": { "type": "integer" },
+        "questionId": { "type": "integer" },
+        "formInstanceId": { "type": "integer" },
+        "value": { "type": "string" }
+      },
+      "required": ["id", "formInstanceId", "value", "answerType"]
+    },
+
+    "formInstance": {
+      "type": "object",
+      "properties": {
+        "type": { "enum": ["FORM_INSTANCE"] },
+        "id": { "type": "integer" },
+        "formId": { "type": "integer" },
+        "dataPointId": { "type": "integer" },
+        "surveyalTime": { "type": "integer" },
+        "collectionDate": { "type": "integer" }
+      },
+      "required": ["type", "id", "formId", "collectionDate"]
+    },
+
+    "dataPoint": {
+      "type": "object",
+      "properties": {
+        "type": { "enum": ["DATA_POINT"] },
+        "id": { "type": "integer" },
+        "surveyId": { "type": "integer" },
+        "identifier": { "type": "string" },
+        "name": { "type": "string" },
+        "location": { "$ref": "geo.json" }
+      },
+      "required": ["type", "id", "surveyId", "identifier"]
+    },
+
+    "question": {
+      "type": "object",
+      "properties": {
+        "type": { "enum": ["QUESTION"] },
+        "id": { "type": "integer" },
+        "questionGroupId": { "type": "integer" },
+        "displayText": { "type": "string" },
+        "identifier": { "type": "string" }
+      },
+      "required": ["type", "id", "questionGroupId", "displayText"]
+    },
+
+    "questionGroup": {
+      "type": "object",
+      "properties": {
+        "type": { "enum": ["QUESTION_GROUP"] },
+        "id": { "type": "integer" },
+        "formId": { "type": "integer" },
+        "name": { "type": "string" }
+      },
+      "required": ["type", "id", "formId", "name"]
+    },
+
+    "form": {
+      "type": "object",
+      "properties": {
+        "type": { "enum": ["FORM"] },
+        "id": { "type": "integer" },
+        "surveyId": { "type": "integer" },
+        "name": { "type": "string" }
+      },
+      "required": ["type", "id", "surveyId", "name"]
+    },
+
+    "survey": {
+      "type": "object",
+      "properties": {
+        "type": { "enum": ["SURVEY_GROUP"] },
+        "id": { "type": "integer" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "public": { "type": "boolean" }
+      },
+      "required": ["type", "id", "name"]
+    },
+
+    "deviceFile": {
+      "type": "object",
+      "properties": {
+        "type": { "enum": ["DEVICE_FILE"] },
+        "id": { "type": "integer" },
+        "phoneNumber": { "type": "string" },
+        "imei": { "type": "string" },
+        "uri": { "type": "string" }
+      },
+      "required": ["type", "id", "uri"]
+    }
+}

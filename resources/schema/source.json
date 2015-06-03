@@ -1,0 +1,24 @@
+{
+  "other": {
+    "type": "object",
+    "properties": {
+      "type": {"enum": [
+        "DEVICE",
+        "SENSOR",
+        "WEBFORM",
+        "API",
+        "UNKNOWN",
+        "SYSTEM"
+      ]}
+    },
+    "required": ["type"]
+  },
+  "user": {
+    "type": "object",
+    "properties": {
+      "type": { "enum": ["USER"]},
+      "id": { "type": "integer" }
+    },
+    "required": ["id", "type"]
+  }
+}

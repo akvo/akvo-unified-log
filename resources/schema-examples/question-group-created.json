@@ -1,0 +1,17 @@
+{
+    "context": {
+        "source": {
+            "id": 16484000,
+            "type": "USER"
+        },
+        "timestamp": 1423472702880
+    },
+    "eventType": "questionGroupCreated",
+    "orgId": "flowaglimmerofhope",
+    "entity": {
+        "id": 22544003,
+        "type": "QUESTION_GROUP",
+        "order": 1,
+        "name": "New group - please change name"
+    }
+}

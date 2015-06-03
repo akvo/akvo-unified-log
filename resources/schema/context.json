@@ -1,0 +1,12 @@
+{
+  "type": "object",
+  "properties": {
+    "source": {
+      "oneOf": [
+        {"$ref": "source.json#/user"},
+        {"$ref": "source.json#/other"}]
+    },
+    "timestamp": { "type": "integer" }
+  },
+  "required": [ "source", "timestamp"]
+}

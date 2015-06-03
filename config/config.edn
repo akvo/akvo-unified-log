@@ -1,5 +1,5 @@
 {:config-folder "../../akvo-flow-server-config"
- :event-schema-file ""
+ :event-schema-file "./resources/schema/event.json"
  :database-user "postgres"
  :database-password ""
  :remote-api-email ""

@@ -1,0 +1,41 @@
+{
+  "orgId": "akvoflow-55",
+  "eventType": "answerCreated",
+  "entity": {
+    "type": "ANSWER",
+    "id": 234234234,
+    "questionId": 234234234,
+    "formInstanceId": 523534534,
+    "answer": {
+      "type": "GEO",
+      "value": {
+        "lat": 123,
+        "lon": 433,
+        "elev": 521
+      }
+    }
+  },
+  "context": {
+    "timestamp": 123,
+    "source": {
+      "type": "USER",
+      "id": 543234
+    }
+  }
+}
+
+{
+  "orgId":"s~flowaglimmerofhope-hrd",
+  "entity": {
+    "id": 23604004,
+    "formInstanceId": 28294002,
+    "value": "foobar",
+    "answerType": "VALUE",
+    "type": "ANSWER"
+  },
+  "context": {
+    "timestamp": 1424416067115,
+    "source": { "type": "DEVICE" }
+  },
+  "eventType": "answerCreated"
+}

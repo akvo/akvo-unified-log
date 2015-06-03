@@ -1,0 +1,15 @@
+{
+  "orgId":"flowaglimmerofhope-hrd",
+  "entity":{
+    "id":22694000,
+    "phoneNumber":"23412313",
+    "imei":"234212412334",
+    "type":"DEVICE_FILE",
+    "uri":"https://flowaglimmerofhope.s3.amazonaws.com/devicezip/ef5d5539-d123-6432-4313-4efd6748ec1f.zip"
+  },
+  "context": {
+    "timestamp":1425292180578,
+    "source": { "type":"SYSTEM" }
+  },
+  "eventType":"deviceFileCreated"
+}

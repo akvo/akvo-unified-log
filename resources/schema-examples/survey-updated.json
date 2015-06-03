@@ -1,0 +1,17 @@
+{
+  "orgId": "akvoflowsandbox",
+  "eventType": "surveyUpdated",
+  "entity": {
+    "type": "SURVEY",
+    "id": 235234234,
+    "name": "foo",
+    "public": true
+  },
+  "context": {
+    "timestamp": 123,
+    "source": {
+      "type": "USER",
+      "id": 52341242344
+    }
+  }
+}

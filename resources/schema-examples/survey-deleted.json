@@ -1,0 +1,14 @@
+{
+  "orgId": "akvoflowsandbox",
+  "eventType": "surveyDeleted",
+  "entity": {
+    "id": 423423
+  },
+  "context": {
+    "timestamp": 123,
+    "source": {
+      "type": "USER",
+      "id": 5432423422123124224232
+    }
+  }
+}
