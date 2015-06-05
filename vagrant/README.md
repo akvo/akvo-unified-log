@@ -21,7 +21,7 @@ The first time you use the Unilog environment:
 
 2. Go into the vagrant directory and start the Vagrant box: `cd vagrant` then `vagrant up`. The first time will take a long time, as it will first download the base Unilog virtual machine. Once this is done, it will update required packages if any have changed, as well as install dependencies of the unified log application (this operation may take some minutes).
 
-3. Try out [http://unilog.localdev.akvo.org/](http://unilog.localdev.akvo.org/)
+3. Try out [https://unilog.localdev.akvo.org/](https://unilog.localdev.akvo.org/)
 
 ## Upgrading
 
@@ -60,7 +60,6 @@ The virtual machine is provisioned with the same [Puppet](http://puppetlabs.com/
 
 * The `akvo-unified-log` and `akvo-flow-server-config` repositories from your local machine are synced to the virtual machine at `/var/akvo/unilog/code` and `/var/akvo/unilog/akvo-flow-server-config` respectively. Therefore, you just need to restart the application (by means of `scripts/devhelpers/supervisorctl.sh`) to test local code changes on both of them.
 
-* The `akvo-core-services` repository is cloned at `/var/akvo/unilog/akvo-core-services` in order to have the flow data schema.
 
 
 ## Useful scripts
