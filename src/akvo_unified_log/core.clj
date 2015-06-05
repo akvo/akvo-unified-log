@@ -40,10 +40,14 @@
 (defonce instances (atom {}))
 
 (defn db-spec [org-id]
-  {:subprotocol "postgresql"
-   :subname (format "//localhost/%s" org-id)
-   :user (:database-user @config/settings)
-   :password (:database-password @config/settings)})
+  (let [settings @config/settings]
+    {:subprotocol "postgresql"
+     :subname (format "//%s:%s/%s"
+                      (:database-host settings)
+                      (:database-port settings 5432)
+                      org-id)
+     :user (:database-user settings)
+     :password (:database-password settings)}))
 
 (defqueries "db.sql")
 
