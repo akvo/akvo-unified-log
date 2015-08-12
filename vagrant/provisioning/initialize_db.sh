@@ -24,12 +24,9 @@ EOF
               payload JSONB
             );
             ALTER TABLE event_log OWNER TO unilog;
-<<<<<<< Updated upstream
-=======
             CREATE INDEX
               timestamp_idx ON
               event_log(cast(payload->'context'->>'timestamp' AS numeric));
->>>>>>> Stashed changes
 
             CREATE OR REPLACE FUNCTION notify_on_event_log_insert()
               RETURNS trigger AS \$\$
