@@ -4,6 +4,8 @@
             Query Query$FilterPredicate Query$FilterOperator
             Query$SortDirection FetchOptions$Builder]))
 
+(def chunk-size 500)
+
 (defn fetch-data-query [date]
   (-> (Query. "EventQueue")
       (.setFilter (Query$FilterPredicate. "createdDateTime"
@@ -14,4 +16,4 @@
 
 (defn fetch-data-iterator [ds since limit]
   (.asIterator (.prepare ds (fetch-data-query since))
-               (FetchOptions$Builder/withLimit limit)))
+               (.chunkSize (FetchOptions$Builder/withLimit limit) chunk-size)))
