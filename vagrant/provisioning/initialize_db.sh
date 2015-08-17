@@ -23,6 +23,10 @@ EOF
               id BIGSERIAL PRIMARY KEY,
               payload JSONB
             );
+            ALTER TABLE event_log OWNER TO unilog;
+            CREATE INDEX
+              timestamp_idx ON
+              event_log(cast(payload->'context'->>'timestamp' AS numeric));
 
             CREATE OR REPLACE FUNCTION notify_on_event_log_insert()
               RETURNS trigger AS \$\$
