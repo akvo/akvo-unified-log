@@ -146,8 +146,14 @@
         :allowed-methods [:get]
         :handle-ok (fn [ctx]
                      (format "<pre>%s</pre>"
-                             (str/escape (with-out-str (pprint @instances))
-                                         {\< "&lt;" \> "&gt;"})))))
+                             (str/escape
+                              (with-out-str
+                                (->> @instances
+                                     vals
+                                     (sort-by :last-insert-date)
+                                     reverse
+                                     pprint))
+                              {\< "&lt;" \> "&gt;"})))))
   (ANY "/event-notification" []
        (resource
         :available-media-types ["application/json"]
