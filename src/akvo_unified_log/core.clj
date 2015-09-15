@@ -97,12 +97,12 @@
 (defn fetch-and-insert-new-events
   "Fetch and insert new events for org-id. Return the number of events inserted"
   [db-spec org-id url]
-  (statsd/with-timing (format "unilog.%s.fetch_and_insert" org-id)
+  (statsd/with-timing (format "%s.fetch_and_insert" org-id)
     (let [events (fetch-data url (last-fetch-date db-spec))
           event-count (count events)]
       (validate-events (map :json-node events))
       (insert-events db-spec (map :jsonb events))
-      (statsd/gauge (format "unilog.%s.event_count" org-id)
+      (statsd/gauge (format "%s.event_count" org-id)
                     event-count)
       event-count)))
 
@@ -181,7 +181,7 @@
                  (let [org-id (:org-id ctx)
                        url (get-in ctx [:org-data :domain])]
                    (debugf "Received notification from %s" org-id)
-                   (statsd/increment (format "unilog.%s.event_notification" org-id))
+                   (statsd/increment (format "%s.event_notification" org-id))
                    (swap! instances update-in [org-id] merge {:org-id org-id
                                                               :url url
                                                               :last-notification (t/now)})
@@ -209,7 +209,9 @@
   (let [settings @config/settings]
     (config/set-config! (:config-folder settings))
     (json/set-validator! (:event-schema-file settings))
-    (statsd/setup (:statsd-host settings) (:statsd-port settings))
+    (statsd/setup (:statsd-host settings)
+                  (:statsd-port settings)
+                  {:prefix (:statsd-prefix settings)})
     (let [port (Integer. (:port settings 3030))]
       (jetty/run-jetty (-> #'app
                            wrap-params
