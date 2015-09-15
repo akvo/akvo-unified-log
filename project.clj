@@ -23,6 +23,7 @@
                  [yesql "0.4.0"]
                  [cheshire "5.4.0"]
                  [environ "1.0.0"]
-                 [clj-time "0.9.0"]]
+                 [clj-time "0.9.0"]
+                 [clj-statsd "0.3.11"]]
   ;; TODO figure out :profiles {:dev {:source-paths ["dev"]}}
   :source-paths ["dev" "src"])

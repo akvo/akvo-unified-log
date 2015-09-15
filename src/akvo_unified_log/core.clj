@@ -17,7 +17,8 @@
             [yesql.core :refer (defqueries)]
             [cheshire.core :refer (generate-string)]
             [environ.core :refer (env)]
-            [clj-time.core :as t])
+            [clj-time.core :as t]
+            [clj-statsd :as statsd])
   (:import [java.util.concurrent Executors TimeUnit]
            [org.postgresql.util PGobject]
            [com.github.fge.jsonschema.main JsonSchema JsonSchemaFactory]
@@ -96,10 +97,13 @@
 (defn fetch-and-insert-new-events
   "Fetch and insert new events for org-id. Return the number of events inserted"
   [db-spec org-id url]
-  (let [events (fetch-data url (last-fetch-date db-spec))]
-    (validate-events (map :json-node events))
-    (insert-events db-spec (map :jsonb events))
-    (count events)))
+  (statsd/with-timing (str org-id ".fetch_and_insert")
+    (let [events (fetch-data url (last-fetch-date db-spec))
+          event-count (count events)]
+      (validate-events (map :json-node events))
+      (insert-events db-spec (map :jsonb events))
+      (statsd/gauge (str org-id ".event_count") event-count)
+      event-count)))
 
 (defn fetch-and-insert-task [org-id]
   (let [db-spec (db-spec org-id)]
@@ -176,6 +180,7 @@
                  (let [org-id (:org-id ctx)
                        url (get-in ctx [:org-data :domain])]
                    (debugf "Received notification from %s" org-id)
+                   (statsd/increment (str org-id ".event_notification"))
                    (swap! instances update-in [org-id] merge {:org-id org-id
                                                               :url url
                                                               :last-notification (t/now)})
@@ -203,6 +208,7 @@
   (let [settings @config/settings]
     (config/set-config! (:config-folder settings))
     (json/set-validator! (:event-schema-file settings))
+    ;; (statsd/setup (:statsd-host settings) (:statsd-port settings))
     (let [port (Integer. (:port settings 3030))]
       (jetty/run-jetty (-> #'app
                            wrap-params
