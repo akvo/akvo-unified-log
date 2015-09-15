@@ -211,7 +211,7 @@
     (json/set-validator! (:event-schema-file settings))
     (statsd/setup (:statsd-host settings)
                   (:statsd-port settings)
-                  {:prefix (:statsd-prefix settings)})
+                  :prefix (:statsd-prefix settings))
     (let [port (Integer. (:port settings 3030))]
       (jetty/run-jetty (-> #'app
                            wrap-params
