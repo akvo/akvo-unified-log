@@ -66,7 +66,7 @@
 ;; TODO Use akvo.commons.gae
 (defn fetch-data [instance-url since]
   (commons-gae/with-datastore [ds (datastore-spec instance-url)]
-    (->> (gae/fetch-data-iterator ds since 1000)
+    (->> (gae/fetch-data-iterator ds since 300)
          iterator-seq
          (map #(or (.getProperty % "payload")
                    (.getValue (.getProperty % "payloadText"))))
