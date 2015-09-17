@@ -131,6 +131,7 @@
             (warnf "No instance data for %s. Cancelling task" org-id)
             (scheduler/cancel-task org-id)))
         (catch Exception e
+          (statsd/increment (format "%s.insert_and_fetch_exception" org-id))
           (warnf "Unexpected exception during fetch/insert: %s" (.getMessage e))
           (error e)
           (warnf "Cancelling task for %s" org-id)

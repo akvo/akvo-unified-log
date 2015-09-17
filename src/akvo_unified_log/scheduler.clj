@@ -7,7 +7,7 @@
 (defonce scheduler (Executors/newScheduledThreadPool 64))
 
 ;; Delay between task runs (in seconds)
-(def delay 30)
+(def delay 10)
 
 ;; Initial delay before the task is run the first time (in seconds)
 (def initial-delay 1)
