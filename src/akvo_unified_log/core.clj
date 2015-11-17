@@ -5,7 +5,6 @@
             [akvo-unified-log.json :as json]
             [akvo-unified-log.scheduler :as scheduler]
             [clojure.string :as str]
-            [clojure.java.io :as io]
             [clojure.pprint :refer (pprint)]
             [clojure.java.jdbc :as jdbc]
             [taoensso.timbre :refer (debugf infof warnf errorf fatalf error)]
@@ -19,13 +18,10 @@
             [environ.core :refer (env)]
             [clj-time.core :as t]
             [clj-statsd :as statsd])
-  (:import [java.util.concurrent Executors TimeUnit]
-           [org.postgresql.util PGobject]
+  (:import [org.postgresql.util PGobject]
            [com.github.fge.jsonschema.main JsonSchema JsonSchemaFactory]
            [com.fasterxml.jackson.databind JsonNode]
            [com.fasterxml.jackson.databind ObjectMapper]))
-
-(defonce scheduler (Executors/newScheduledThreadPool 64))
 
 ;; A map of registered instances. Maps an org-id (which is also the db
 ;; name of that instance) to a map of information about the state of
