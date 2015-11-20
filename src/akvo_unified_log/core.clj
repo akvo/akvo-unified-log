@@ -1,5 +1,5 @@
 (ns akvo-unified-log.core
-  (:require [akvo.commons.config :as config]
+  (:require [akvo.commons.config :as cfg]
             [akvo.commons.gae :as commons-gae]
             [akvo-unified-log.gae :as gae]
             [akvo-unified-log.json :as json]
@@ -12,12 +12,13 @@
             [ring.adapter.jetty :as jetty]
             [ring.middleware.params :refer (wrap-params)]
             [ring.middleware.json :refer (wrap-json-body)]
-            [compojure.core :refer (defroutes ANY)]
+            [compojure.core :refer (defroutes POST GET)]
             [yesql.core :refer (defqueries)]
             [cheshire.core :refer (generate-string)]
             [environ.core :refer (env)]
             [clj-time.core :as t]
-            [clj-statsd :as statsd])
+            [clj-statsd :as statsd]
+            [com.stuartsierra.component :as component])
   (:import [org.postgresql.util PGobject]
            [com.github.fge.jsonschema.main JsonSchema JsonSchemaFactory]
            [com.fasterxml.jackson.databind JsonNode]
@@ -37,7 +38,7 @@
 (defonce instances (atom {}))
 
 (defn db-spec [org-id]
-  (let [settings @config/settings]
+  (let [settings @cfg/settings]
     {:subprotocol "postgresql"
      :subname (format "//%s:%s/%s"
                       (:database-host settings)
@@ -49,7 +50,7 @@
 (defqueries "db.sql")
 
 (defn datastore-spec [instance-url]
-  (let [settings @config/settings]
+  (let [settings @cfg/settings]
     (if (:local-datastore? settings)
       {} ;; Empty spec uses local datastore
       {:server instance-url
@@ -142,7 +143,8 @@
           false))))
 
 (defroutes app
-  (ANY "/status" []
+  (GET "/" [] "OK")
+  (GET "/status" []
        (resource
         :available-media-types ["text/html"]
         :allowed-methods [:get]
@@ -156,14 +158,14 @@
                                      reverse
                                      pprint))
                               {\< "&lt;" \> "&gt;"})))))
-  (ANY "/event-notification" []
+  (POST "/event-notification" []
        (resource
         :available-media-types ["application/json"]
         :allowed-methods [:post]
         :known-content-type? json-content-type?
         :processable? (fn [ctx]
                         (if-let [org-id (get-in ctx [:request :body "orgId"])]
-                          (if-let [org-data (get @config/configs org-id)]
+                          (if-let [org-data (get @cfg/configs org-id)]
                             (assoc ctx
                                    :org-id org-id
                                    :org-data org-data)
@@ -189,7 +191,7 @@
                        (scheduler/schedule-task org-id (fetch-and-insert-task org-id))))))
         :new? false))
 
-  (ANY "/events/:org-id" [org-id]
+  (POST "/events/:org-id" [org-id]
        (resource
         :available-media-types ["application/json"]
         :allowed-methods [:post]
@@ -201,10 +203,35 @@
                        ;; TODO validate?
                        (insert-events db-conn [jsonb]))))))))
 
+(defrecord HttpComponent [config handler http]
+  component/Lifecycle
+  (start [this]
+    (if http
+      this
+      (assoc this :http (jetty/run-jetty handler {:port (:port config) :join? false}))))
+  (stop [this]
+    (if (not http)
+      this
+      (do
+        (.stop http)
+        (assoc this :http nil)))))
+
+(defn new-http []
+  (map->HttpComponent {}))
+
+(defn example-system [config-options]
+  (component/system-map
+    :config config-options
+    :handler (-> app
+                 wrap-params
+                 wrap-json-body)
+    :http (component/using (new-http) [:config :handler])))
+
+
 (defn -main [settings-file]
-  (config/set-settings! settings-file)
-  (let [settings @config/settings]
-    (config/set-config! (:config-folder settings))
+  (cfg/set-settings! settings-file)
+  (let [settings @cfg/settings]
+    (cfg/set-config! (:config-folder settings))
     (json/set-validator! (:event-schema-file settings))
     (statsd/setup (:statsd-host settings)
                   (:statsd-port settings)
