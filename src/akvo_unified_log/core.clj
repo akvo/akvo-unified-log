@@ -1,6 +1,7 @@
 (ns akvo-unified-log.core
   (:require [akvo.commons.config :as cfg]
             [akvo.commons.gae :as commons-gae]
+            [akvo.commons.metrics :as metrics]
             [akvo-unified-log.gae :as gae]
             [akvo-unified-log.json :as json]
             [akvo-unified-log.scheduler :as scheduler]
@@ -17,7 +18,7 @@
             [cheshire.core :refer (generate-string)]
             [environ.core :refer (env)]
             [clj-time.core :as t]
-            [clj-statsd :as statsd]
+            [clj-statsd :as sts]
             [com.stuartsierra.component :as component])
   (:import [org.postgresql.util PGobject]
            [com.github.fge.jsonschema.main JsonSchema JsonSchemaFactory]
@@ -94,13 +95,13 @@
 (defn fetch-and-insert-new-events
   "Fetch and insert new events for org-id. Return the number of events inserted"
   [db-spec org-id url]
-  (statsd/with-timing (format "%s.fetch_and_insert" org-id)
-    (let [events (fetch-data url (last-fetch-date db-spec))
+  (sts/with-timing (format "%s.fetch_and_insert" org-id)
+                   (let [events (fetch-data url (last-fetch-date db-spec))
           event-count (count events)]
       (validate-events (map :json-node events))
       (insert-events db-spec (map :jsonb events))
-      (statsd/gauge (format "%s.event_count" org-id)
-                    event-count)
+      (sts/gauge (format "%s.event_count" org-id)
+                 event-count)
       event-count)))
 
 (defn fetch-and-insert-task [org-id]
@@ -128,7 +129,7 @@
             (warnf "No instance data for %s. Cancelling task" org-id)
             (scheduler/cancel-task org-id)))
         (catch Exception e
-          (statsd/increment (format "%s.insert_and_fetch_exception" org-id))
+          (sts/increment (format "%s.insert_and_fetch_exception" org-id))
           (warnf "Unexpected exception during fetch/insert: %s" (.getMessage e))
           (error e)
           (warnf "Cancelling task for %s" org-id)
@@ -180,7 +181,7 @@
                  (let [org-id (:org-id ctx)
                        url (get-in ctx [:org-data :domain])]
                    (debugf "Received notification from %s" org-id)
-                   (statsd/increment (format "%s.event_notification" org-id))
+                   (sts/increment (format "%s.event_notification" org-id))
                    (swap! instances update-in [org-id] merge {:org-id org-id
                                                               :url url
                                                               :last-notification (t/now)})
@@ -208,7 +209,7 @@
   (start [this]
     (if http
       this
-      (assoc this :http (jetty/run-jetty handler {:port (:port config) :join? false}))))
+      (assoc this :http (jetty/run-jetty handler {:port (or (:port config) 3030) :join? false}))))
   (stop [this]
     (if (not http)
       this
@@ -219,13 +220,18 @@
 (defn new-http []
   (map->HttpComponent {}))
 
-(defn example-system [config-options]
+(defn new-system [config-options]
   (component/system-map
     :config config-options
     :handler (-> app
                  wrap-params
                  wrap-json-body)
-    :http (component/using (new-http) [:config :handler])))
+    :flow-config (cfg/new-akvoflow-config (:config-folder config-options))
+    :http (component/using (new-http) [:config :handler])
+    :validator (json/new-validator (:event-schema-file config-options))
+    :statsd (metrics/new-statsd (:statsd-host config-options)
+                                (:statsd-port config-options)
+                                (:statsd-prefix config-options))))
 
 
 (defn -main [settings-file]
@@ -233,9 +239,9 @@
   (let [settings @cfg/settings]
     (cfg/set-config! (:config-folder settings))
     (json/set-validator! (:event-schema-file settings))
-    (statsd/setup (:statsd-host settings)
-                  (:statsd-port settings)
-                  :prefix (:statsd-prefix settings))
+    (sts/setup (:statsd-host settings)
+               (:statsd-port settings)
+               :prefix (:statsd-prefix settings))
     (let [port (Integer. (:port settings 3030))]
       (jetty/run-jetty (-> #'app
                            wrap-params

@@ -1,11 +1,11 @@
 (ns akvo-unified-log.json
   (:refer-clojure :exclude (set-validator!))
   (:require [clojure.java.io :as io]
-            [akvo.commons.config :as config]
-            [taoensso.timbre :refer (debugf infof warnf errorf fatalf error)])
+            [taoensso.timbre :refer (debugf infof warnf errorf fatalf error)]
+            [com.stuartsierra.component :as component])
   (:import [java.io FileNotFoundException]
            [org.postgresql.util PGobject]
-           [com.github.fge.jsonschema.main JsonSchema JsonSchemaFactory]
+           [com.github.fge.jsonschema.main JsonSchemaFactory]
            [com.fasterxml.jackson.databind JsonNode]
            [com.fasterxml.jackson.databind ObjectMapper]))
 
@@ -16,10 +16,9 @@
 (defn json-node [s]
   (.readValue object-mapper s JsonNode))
 
-(defn valid? [json-node]
-  (if schema-validator
-    (.validInstance schema-validator json-node)
-    true))
+(defn valid?
+  [validator json-node]
+  (.validInstance validator json-node))
 
 (defn jsonb
   "Create a JSONB object"
@@ -40,3 +39,18 @@
   (try (alter-var-root #'schema-validator make-schema-validator schema-root-file)
        (catch Exception e
          (warnf e "Could not initialize JSON schema validation. Event validation disabled."))))
+
+
+(defrecord JSONValidator [schema-file validator]
+  component/Lifecycle
+  (start [this]
+    (if validator
+      this
+      (assoc this :validator (.getJsonSchema (JsonSchemaFactory/byDefault) schema-file))))
+  (stop [this]
+    (if validator
+      (assoc this :validator nil)
+      this)))
+
+(defn new-validator [schema-file]
+  (map->JSONValidator {:schema-file schema-file}))
