@@ -19,8 +19,11 @@
             [environ.core :refer (env)]
             [clj-time.core :as t]
             [clj-statsd :as sts]
-            [com.stuartsierra.component :as component])
-  (:import [org.postgresql.util PGobject]
+            [com.stuartsierra.component :as component]
+            [clojure.java.io :as io]
+            [clojure.edn :as edn])
+  (:import [java.util Date]
+           [org.postgresql.util PGobject]
            [com.github.fge.jsonschema.main JsonSchema JsonSchemaFactory]
            [com.fasterxml.jackson.databind JsonNode]
            [com.fasterxml.jackson.databind ObjectMapper]))
@@ -79,11 +82,11 @@
 
 (defn last-fetch-date [db-spec]
   (let [ts (first (last-timestamp db-spec))]
-    (java.util.Date. (long (or (:timestamp ts) 0)))))
+    (Date. (long (or (:timestamp ts) 0)))))
 
-(defn validate-events [events]
+(defn validate-events [validator events]
   (doseq [event events]
-    (when-not (json/valid? event)
+    (when-not (json/valid? validator event)
       (warnf "Event %s does not follow schema" event))))
 
 ;; TODO bulk insert
@@ -94,17 +97,17 @@
 ;; TODO Don't insert on validation failure?
 (defn fetch-and-insert-new-events
   "Fetch and insert new events for org-id. Return the number of events inserted"
-  [db-spec org-id url]
+  [db-spec org-id url validator]
   (sts/with-timing (format "%s.fetch_and_insert" org-id)
                    (let [events (fetch-data url (last-fetch-date db-spec))
           event-count (count events)]
-      (validate-events (map :json-node events))
+      (validate-events validator (map :json-node events))
       (insert-events db-spec (map :jsonb events))
       (sts/gauge (format "%s.event_count" org-id)
                  event-count)
       event-count)))
 
-(defn fetch-and-insert-task [org-id]
+(defn fetch-and-insert-task [org-id validator]
   (let [db-spec (db-spec org-id)]
     (fn []
       (try
@@ -117,7 +120,7 @@
             (if (or (pos? (or last-event-count 0))
                     (t/within? (t/interval five-minutes-ago now)
                                last-notification))
-              (let [event-count (fetch-and-insert-new-events db-spec org-id url)]
+              (let [event-count (fetch-and-insert-new-events db-spec org-id url validator)]
                 (debugf "Inserted %s events into %s" event-count org-id)
                 (swap! instances assoc-in [org-id :last-insert-date] now)
                 (swap! instances assoc-in [org-id :last-event-count] event-count)
@@ -228,22 +231,16 @@
                  wrap-json-body)
     :flow-config (cfg/new-akvoflow-config (:config-folder config-options))
     :http (component/using (new-http) [:config :handler])
-    :validator (json/new-validator (:event-schema-file config-options))
+    :validator (json/new-validator (-> config-options
+                                       :event-schema-file
+                                       io/file
+                                       .toURI
+                                       str))
     :statsd (metrics/new-statsd (:statsd-host config-options)
                                 (:statsd-port config-options)
                                 (:statsd-prefix config-options))))
 
 
-(defn -main [settings-file]
-  (cfg/set-settings! settings-file)
-  (let [settings @cfg/settings]
-    (cfg/set-config! (:config-folder settings))
-    (json/set-validator! (:event-schema-file settings))
-    (sts/setup (:statsd-host settings)
-               (:statsd-port settings)
-               :prefix (:statsd-prefix settings))
-    (let [port (Integer. (:port settings 3030))]
-      (jetty/run-jetty (-> #'app
-                           wrap-params
-                           wrap-json-body)
-                       {:port port :join? false}))))
+(defn -main [path]
+  (let [cfg (-> io/file path slurp edn/read-string)]
+    (new-system cfg)))
