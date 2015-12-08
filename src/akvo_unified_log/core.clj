@@ -52,20 +52,21 @@
 
 (defqueries "db.sql")
 
-(defn datastore-spec [instance-url]
-  (let [settings @config/settings]
+(defn datastore-spec [org-id instance-url]
+  (let [settings @config/settings
+        {:keys [service-account-id private-key-file]} (config/find-config org-id)]
     (if (:local-datastore? settings)
       {} ;; Empty spec uses local datastore
-      {:server instance-url
+      {:host instance-url
        :port 443
-       :email (:remote-api-email settings)
-       :password (:remote-api-password settings)})))
+       :service-account-id service-account-id
+       :private-key-file private-key-file})))
 
 ;; TODO Cache installer so we don't need to re-autheniticate each time
 ;;      See RemoteApiOptions javadoc
 ;; TODO Use akvo.commons.gae
-(defn fetch-data [instance-url since]
-  (commons-gae/with-datastore [ds (datastore-spec instance-url)]
+(defn fetch-data [org-id instance-url since]
+  (commons-gae/with-datastore [ds (datastore-spec org-id instance-url)]
     (->> (gae/fetch-data-iterator ds since 300)
          iterator-seq
          (map #(or (.getProperty % "payload")
@@ -98,7 +99,7 @@
   "Fetch and insert new events for org-id. Return the number of events inserted"
   [db-spec org-id url]
   (statsd/with-timing (format "%s.fetch_and_insert" org-id)
-    (let [events (fetch-data url (last-fetch-date db-spec))
+    (let [events (fetch-data org-id url (last-fetch-date db-spec))
           event-count (count events)]
       (validate-events (map :json-node events))
       (insert-events db-spec (map :jsonb events))
