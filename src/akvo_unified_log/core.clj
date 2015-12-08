@@ -57,7 +57,7 @@
         {:keys [service-account-id private-key-file]} (config/find-config org-id)]
     (if (:local-datastore? settings)
       {} ;; Empty spec uses local datastore
-      {:host instance-url
+      {:hostname instance-url
        :port 443
        :service-account-id service-account-id
        :private-key-file private-key-file})))
