@@ -218,4 +218,5 @@
       (jetty/run-jetty (-> #'app
                            wrap-params
                            wrap-json-body)
-                       {:port port :join? false}))))
+                       {:port port :join? false})
+      (infof "Unilog started. Listening on %s" port))))

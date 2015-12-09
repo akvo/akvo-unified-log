@@ -27,4 +27,14 @@
                  [clj-time "0.9.0"]
                  [clj-statsd "0.3.11"]]
   ;; TODO figure out :profiles {:dev {:source-paths ["dev"]}}
-  :source-paths ["dev" "src"])
+  :source-paths ["dev" "src"]
+
+  :release-tasks [["vcs" "assert-committed"]
+                  ["change" "version"
+                   "leiningen.release/bump-version" "release"]
+                  ["vcs" "commit"]
+                  ["vcs" "tag"]
+                  ;; ["deploy"]
+                  ["change" "version" "leiningen.release/bump-version"]
+                  ["vcs" "commit"]
+                  ["vcs" "push"]])
