@@ -1,222 +1,115 @@
 (ns akvo-unified-log.core
-  (:require [akvo.commons.config :as config]
-            [akvo.commons.gae :as commons-gae]
-            [akvo-unified-log.gae :as gae]
+  (:require [akvo.commons.gae :as gae]
+            [akvo.commons.gae.query :as query]
+            [akvo-unified-log.config :as config]
             [akvo-unified-log.json :as json]
-            [akvo-unified-log.scheduler :as scheduler]
-            [clojure.string :as str]
-            [clojure.java.io :as io]
-            [clojure.pprint :refer (pprint)]
-            [clojure.java.jdbc :as jdbc]
-            [taoensso.timbre :refer (debugf infof warnf errorf fatalf error)]
-            [liberator.core :refer (resource defresource)]
+            [akvo-unified-log.endpoints :as endpoints]
+            [clojure.core.async :as async]
+            [taoensso.timbre :as log]
             [ring.adapter.jetty :as jetty]
             [ring.middleware.params :refer (wrap-params)]
             [ring.middleware.json :refer (wrap-json-body)]
-            [compojure.core :refer (defroutes ANY)]
+            [compojure.core :refer (routes ANY)]
             [yesql.core :refer (defqueries)]
-            [cheshire.core :refer (generate-string)]
-            [environ.core :refer (env)]
-            [clj-time.core :as t]
-            [clj-statsd :as statsd])
-  (:import [java.util.concurrent Executors TimeUnit]
-           [org.postgresql.util PGobject]
-           [com.github.fge.jsonschema.main JsonSchema JsonSchemaFactory]
-           [com.fasterxml.jackson.databind JsonNode]
-           [com.fasterxml.jackson.databind ObjectMapper]))
+            [clj-statsd :as statsd]))
 
-(defonce scheduler (Executors/newScheduledThreadPool 64))
+(defn event-log-spec [org-config]
+  {:subprotocol "postgresql"
+   :subname (format "//%s:%s/%s"
+                    (:database-host org-config)
+                    (:database-port org-config 5432)
+                    (:org-id org-config))
+   :user (:database-user org-config)
+   :password (:database-password org-config)})
 
-;; A map of registered instances. Maps an org-id (which is also the db
-;; name of that instance) to a map of information about the state of
-;; the instance. e.g.
-;; {\"flowaglimmerofhope-hrd\" {:org-id \"flowaglimmerofhope-hrd\"
-;;                              :url \"flowaglimmerofhope.appspot.com\"
-;;                              :last-notification #<DateTime ...>
-;;                              :last-insert-datetime #<DateTime ...>
-;;                              :last-event-count 12
-;;                              :total-event-count 5321
-;;                              :started #<DateTime ...>
-;;                              :status :idle}}
-(defonce instances (atom {}))
-
-(defn db-spec [org-id]
-  (let [settings @config/settings]
-    {:subprotocol "postgresql"
-     :subname (format "//%s:%s/%s"
-                      (:database-host settings)
-                      (:database-port settings 5432)
-                      org-id)
-     :user (:database-user settings)
-     :password (:database-password settings)}))
+(defn datastore-spec [org-config]
+  (assoc (select-keys org-config [:service-account-id :private-key-file])
+         :hostname (str (:org-id org-config) ".appspot.com")
+         :port 443))
 
 (defqueries "db.sql")
-
-(defn datastore-spec [org-id instance-url]
-  (let [settings @config/settings
-        {:keys [service-account-id private-key-file]} (config/find-config org-id)]
-    (if (:local-datastore? settings)
-      {} ;; Empty spec uses local datastore
-      {:hostname instance-url
-       :port 443
-       :service-account-id service-account-id
-       :private-key-file private-key-file})))
-
-;; TODO Cache installer so we don't need to re-autheniticate each time
-;;      See RemoteApiOptions javadoc
-;; TODO Use akvo.commons.gae
-(defn fetch-data [org-id instance-url since]
-  (commons-gae/with-datastore [ds (datastore-spec org-id instance-url)]
-    (->> (gae/fetch-data-iterator ds since 300)
-         iterator-seq
-         (map #(or (.getProperty % "payload")
-                   (.getValue (.getProperty % "payloadText"))))
-         ;; We need two representations, one for validation/sorting and one for postgres
-         (map (fn [s]
-                {:string s
-                 :jsonb (json/jsonb s)
-                 :json-node (json/json-node s)}))
-         ;; TODO We fetch sorted by createdDateTime so this isn't necessary?
-         (sort-by #(-> % :json-node (.get "context") (.get "timestamp") .longValue))
-         vec)))
 
 (defn last-fetch-date [db-spec]
   (let [ts (first (last-timestamp db-spec))]
     (java.util.Date. (long (or (:timestamp ts) 0)))))
 
-(defn validate-events [events]
-  (doseq [event events]
-    (when-not (json/valid? event)
-      (warnf "Event %s does not follow schema" event))))
-
-;; TODO bulk insert
 (defn insert-events [db-spec events]
   (doseq [event events]
-    (insert<! db-spec event)))
+    (insert<! db-spec event))
+  (count events))
 
-;; TODO Don't insert on validation failure?
+(defn payload [entity]
+  (or (.getProperty entity "payload")
+      (.getValue (.getProperty entity "payloadText"))))
+
 (defn fetch-and-insert-new-events
-  "Fetch and insert new events for org-id. Return the number of events inserted"
-  [db-spec org-id url]
-  (statsd/with-timing (format "%s.fetch_and_insert" org-id)
-    (let [events (fetch-data org-id url (last-fetch-date db-spec))
-          event-count (count events)]
-      (validate-events (map :json-node events))
-      (insert-events db-spec (map :jsonb events))
-      (statsd/gauge (format "%s.event_count" org-id)
-                    event-count)
-      event-count)))
+  "Fetch EventQueue data from a FLOW instance and insert it into the
+  corresponding postgres event log. Returns true if some events were
+  inserted and false otherwise."
+  [config]
+  (try
+    (statsd/with-timing (format "%s.fetch_and_insert" (:org-id config))
+      (gae/with-datastore [ds (datastore-spec config)]
+        (let [date (last-fetch-date (event-log-spec config))
+              _ (log/debugf "Fetching data since %s for %s from GAE" date (:org-id config))
+              event-count (->> (query/result ds
+                                             {:kind "EventQueue"
+                                              :filter (query/> "createdDateTime" date)
+                                              :sort-by "createdDateTime"}
+                                             {:limit 300})
+                               seq
+                               (map payload)
+                               (map json/jsonb)
+                               (insert-events (event-log-spec config)))]
+          (if (pos? event-count)
+            (do (statsd/gauge (format "%s.event_count" (:org-id config)) event-count)
+                (log/debugf "Inserted %s events into event log %s" event-count (:org-id config))
+                true)
+            (do (log/debugf "No more events for %s" (:org-id config))
+                false)))))
+    (catch Throwable e
+      (statsd/increment (format "%s.insert_and_fetch_exception" (:org-id config)))
+      (log/error e)
+      false)))
 
-(defn fetch-and-insert-task [org-id]
-  (let [db-spec (db-spec org-id)]
-    (fn []
-      (try
-        (if-let [instance-data (get @instances org-id)]
-          ;; Figure out if we want to continue data fetching or cancel
-          ;; the task and wait for notification from the GAE instance
-          (let [{:keys [url last-notification last-event-count]} instance-data
-                now (t/now)
-                five-minutes-ago (t/minus now (t/minutes 5))]
-            (if (or (pos? (or last-event-count 0))
-                    (t/within? (t/interval five-minutes-ago now)
-                               last-notification))
-              (let [event-count (fetch-and-insert-new-events db-spec org-id url)]
-                (debugf "Inserted %s events into %s" event-count org-id)
-                (swap! instances assoc-in [org-id :last-insert-date] now)
-                (swap! instances assoc-in [org-id :last-event-count] event-count)
-                (swap! instances update-in [org-id :total-event-count] (fnil + 0) event-count))
-              (do
-                (infof "No new events for %s and no notifications from GAE. Halting data fetching for now" org-id)
-                (scheduler/cancel-task org-id))))
-          (do
-            (warnf "No instance data for %s. Cancelling task" org-id)
-            (scheduler/cancel-task org-id)))
-        (catch Exception e
-          (statsd/increment (format "%s.insert_and_fetch_exception" org-id))
-          (warnf "Unexpected exception during fetch/insert: %s" (.getMessage e))
-          (error e)
-          (warnf "Cancelling task for %s" org-id)
-          (swap! instances dissoc org-id)
-          (scheduler/cancel-task org-id))))))
+(defn event-notification-handler [org-id event-chan notification-chan]
+  (async/thread
+    (loop []
+      (when-let [config (async/<!! event-chan)]
+        (when (fetch-and-insert-new-events config)
+          (async/go
+            (async/>! notification-chan config)
+            (async/<! (async/timeout (* 10 1000)))
+            (async/>! notification-chan config)
+            (async/<! (async/timeout (* 2 60 1000)))
+            (async/>! notification-chan config)))
+        (recur)))
+    (async/close! event-chan)
+    (log/infof "Exiting event notification thread for %s" org-id)))
 
-(defn json-content-type? [ctx]
-  (let [content-type (get-in ctx [:request :headers "content-type"])]
-    (if (= content-type "application/json")
-      true
-      (do (warnf "Invalid content type: %s" content-type)
-          false))))
+(defn app [config]
+  (routes
+   (ANY "/status" _ (endpoints/status config))
+   (ANY "/event-notification" _ (endpoints/event-notification config))
+   (ANY "/reload-config" _ (endpoints/reload-config config))))
 
-(defroutes app
-  (ANY "/status" []
-       (resource
-        :available-media-types ["text/html"]
-        :allowed-methods [:get]
-        :handle-ok (fn [ctx]
-                     (format "<pre>%s</pre>"
-                             (str/escape
-                              (with-out-str
-                                (->> @instances
-                                     vals
-                                     (sort-by :last-insert-date)
-                                     reverse
-                                     pprint))
-                              {\< "&lt;" \> "&gt;"})))))
-  (ANY "/event-notification" []
-       (resource
-        :available-media-types ["application/json"]
-        :allowed-methods [:post]
-        :known-content-type? json-content-type?
-        :processable? (fn [ctx]
-                        (if-let [org-id (get-in ctx [:request :body "orgId"])]
-                          (if-let [org-data (get @config/configs org-id)]
-                            (assoc ctx
-                                   :org-id org-id
-                                   :org-data org-data)
-                            (do (warnf "No data found for orgId: %s. Request body: %s"
-                                       org-id
-                                       (get-in ctx [:request :body]))
-                                false))
-                          (do (warnf "Invalid notification request body: %s"
-                                     (get-in ctx [:request :body]))
-                              false)))
-        :post! (fn [ctx]
-                 (let [org-id (:org-id ctx)
-                       url (get-in ctx [:org-data :domain])]
-                   (debugf "Received notification from %s" org-id)
-                   (statsd/increment (format "%s.event_notification" org-id))
-                   (swap! instances update-in [org-id] merge {:org-id org-id
-                                                              :url url
-                                                              :last-notification (t/now)})
-                   (if (scheduler/running? org-id)
-                     (debugf "ScheduledFuture is already running for %s" org-id)
-                     (do
-                       (infof "Scheduling data fetching for %s" org-id)
-                       (scheduler/schedule-task org-id (fetch-and-insert-task org-id))))))
-        :new? false))
+(defn -main [repos-dir config-file-name]
+  (let [config (assoc (config/init-config repos-dir
+                                          config-file-name
+                                          event-notification-handler)
+                      :repos-dir repos-dir
+                      :config-file-name config-file-name) ]
+    (statsd/setup (:statsd-host config)
+                  (:statsd-port config)
+                  :prefix (:statsd-prefix config))
+    (let [port (Integer. (:port config 3030))
+          server (jetty/run-jetty (-> (app (atom config))
+                                      wrap-params
+                                      wrap-json-body)
+                                  {:port port :join? false})]
+      (log/infof "Unilog started. Listening on %s" port)
+      server)))
 
-  (ANY "/events/:org-id" [org-id]
-       (resource
-        :available-media-types ["application/json"]
-        :allowed-methods [:post]
-        :known-content-type? json-content-type?
-        :post! (fn [ctx]
-                 (jdbc/with-db-connection [db-conn (db-spec org-id)]
-                   (doseq [event-string (map generate-string (-> ctx :request :body))]
-                     (let [jsonb (json/jsonb event-string)]
-                       ;; TODO validate?
-                       (insert-events db-conn [jsonb]))))))))
-
-(defn -main [settings-file]
-  (config/set-settings! settings-file)
-  (let [settings @config/settings]
-    (config/set-config! (:config-folder settings))
-    (json/set-validator! (:event-schema-file settings))
-    (statsd/setup (:statsd-host settings)
-                  (:statsd-port settings)
-                  :prefix (:statsd-prefix settings))
-    (let [port (Integer. (:port settings 3030))]
-      (jetty/run-jetty (-> #'app
-                           wrap-params
-                           wrap-json-body)
-                       {:port port :join? false})
-      (infof "Unilog started. Listening on %s" port))))
+(comment
+  (def server (-main "/var/tmp/akvo/unified-log" "test.edn"))
+  (.stop server))
