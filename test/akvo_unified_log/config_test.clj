@@ -71,21 +71,12 @@
     (let [config (atom nil)]
       (with-redefs [read-config-file (read-config-file-mock-fn {})]
         (reset! config (init-config repos-dir config-file-name event-notification-handler))
-        (with-redefs [read-config-file (read-config-mock-fn {"instance-1" nil
-                                                             "instance-2" nil})]
+        (with-redefs [read-config-file (read-config-file-mock-fn {"instance-1" nil
+                                                                  "instance-2" nil})]
           (reset! config (reload-config @config))
           (is (valid-instance? @config "instance-1"))
           (is (valid-instance? @config "instance-2"))
-          (with-redefs [read-config-file (read-config-mock-fn {"instance-1" nil})]
+          (with-redefs [read-config-file (read-config-file-mock-fn {"instance-1" nil})]
             (reset! config (reload-config @config))
             (is (valid-instance? @config "instance-1"))
             (is (missing-instance? @config "instance-2"))))))))
-
-(comment
-
-  (with-redefs [read-remote-api-credentials read-remote-api-credentials-mock
-                read-config-file (read-config-file-mock-fn {"akvoflow-1" nil})]
-    (init-config repos-dir config-file-name event-notification-handler))
-
-
-  (run-tests))
