@@ -8,7 +8,7 @@
                  [org.clojure/java.jdbc "0.3.6"]
                  [org.clojure/core.async "0.2.374"]
                  [org.clojure/tools.nrepl "0.2.12"]
-                 [org.akvo/commons "0.4.1"]
+                 [org.akvo/commons "0.4.2"]
                  [org.postgresql/postgresql "9.3-1102-jdbc41"]
                  [com.github.fge/json-schema-validator "2.2.6"]
                  [com.google.appengine/appengine-tools-sdk "1.9.30"]

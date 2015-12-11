@@ -8,10 +8,10 @@
   (:import [com.google.apphosting.utils.config AppEngineWebXmlReader]))
 
 (def akvo-config-clone-url
-  "https://github.com/akvo/akvo-config")
+  "git@github.com:akvo/akvo-config.git")
 
 (def akvo-flow-server-config-clone-url
-  "https://github.com/akvo/akvo-flow-server-config")
+  "git@github.com:akvo/akvo-flow-server-config.git")
 
 (defn read-remote-api-credentials [repos-dir org-id]
   (let [path (format "%s/akvo-flow-server-config/%s" repos-dir org-id)
