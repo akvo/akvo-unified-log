@@ -28,7 +28,7 @@
                  [clj-statsd "0.3.11"]]
   ;; TODO figure out :profiles {:dev {:source-paths ["dev"]}}
   :source-paths ["dev" "src"]
-
+  :main akvo-unified-log.core
   :release-tasks [["vcs" "assert-committed"]
                   ["change" "version"
                    "leiningen.release/bump-version" "release"]
