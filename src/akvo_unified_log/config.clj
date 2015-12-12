@@ -108,8 +108,7 @@
   (let [config (read-config repos-dir config-file-name)
         event-notification-chan (async/chan (async/sliding-buffer 1000))
         event-notification-pub (async/pub event-notification-chan :org-id)]
-    (doseq [org-id (keys (:instances config))]
-      (subscribe org-id event-notification-pub event-notification-chan event-notification-handler))
+
     (-> config
         (assoc :event-notification-chan event-notification-chan
                :event-notification-pub event-notification-pub
