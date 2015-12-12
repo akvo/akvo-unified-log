@@ -72,19 +72,23 @@
       (log/error e)
       false)))
 
-(defn event-notification-handler [org-id event-chan notification-chan]
-  (async/thread
+(defn put-interval!
+  "Asynchronously put val on chan n times every interval msecs"
+  [chan val n interval]
+  (async/go
+    (dotimes [_ n]
+      (async/>! chan val)
+      (async/<! (async/timeout interval)))))
+
+(defn event-notification-handler
+  [org-id event-chan notification-chan]
+  (async/go
     (loop []
-      (when-let [config (async/<!! event-chan)]
+      (when-let [config (async/<! event-chan)]
         (when (fetch-and-insert-new-events config)
-          (async/go
-            (async/>! notification-chan config)
-            (async/<! (async/timeout (* 10 1000)))
-            (async/>! notification-chan config)
-            (async/<! (async/timeout (* 2 60 1000)))
-            (async/>! notification-chan config)))
+          ;; Every 20 second, for 2 minutes
+          (put-interval! notification-chan config 6 20000))
         (recur)))
-    (async/close! event-chan)
     (log/infof "Exiting event notification thread for %s" org-id)))
 
 (defn app [config]
