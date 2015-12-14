@@ -33,9 +33,11 @@
    :statsd-port "8125"
    :statsd-prefix "unilog.test."})
 
-(defn read-config-file-mock-fn [instances]
-  (fn [repos-dir config-file-name]
-    (assoc base-config :instances instances)))
+(defn read-config-file-mock-fn
+  ([] (read-config-file-mock-fn {}))
+  ([config-changes]
+   (fn [repos-dir config-file-name]
+     (merge base-config config-changes))))
 
 (defn valid-instance? [config instance]
   (let [instance-config (get-in config [:instances instance])]
@@ -52,29 +54,40 @@
 
 (deftest config-test
   (testing "initialize config without any instances"
-    (with-redefs [read-config-file (read-config-file-mock-fn {})]
+    (with-redefs [read-config-file (read-config-file-mock-fn)]
       (let [config (init-config repos-dir config-file-name event-notification-handler)]
         (is (map? config))
         (is (contains? config :instances))
         (is (empty? (:instances config))))))
 
   (testing "initialize config with instances"
-    (with-redefs [read-config-file (read-config-file-mock-fn {"instance-1" nil
-                                                              "instance-2" nil})]
+    (with-redefs [read-config-file (read-config-file-mock-fn {:instances {"instance-1" nil
+                                                                          "instance-2" nil}} )]
       (let [config (init-config repos-dir config-file-name event-notification-handler)]
         (is (valid-instance? config "instance-1"))
         (is (valid-instance? config "instance-2")))))
 
-  (testing "reload-config"
+  (testing "instances changes"
     (let [config (atom nil)]
-      (with-redefs [read-config-file (read-config-file-mock-fn {})]
+      (with-redefs [read-config-file (read-config-file-mock-fn)]
         (reset! config (init-config repos-dir config-file-name event-notification-handler))
-        (with-redefs [read-config-file (read-config-file-mock-fn {"instance-1" nil
-                                                                  "instance-2" nil})]
+        (with-redefs [read-config-file (read-config-file-mock-fn {:instances {"instance-1" nil
+                                                                              "instance-2" nil}} )]
           (reset! config (reload-config @config))
           (is (valid-instance? @config "instance-1"))
           (is (valid-instance? @config "instance-2"))
-          (with-redefs [read-config-file (read-config-file-mock-fn {"instance-1" nil})]
+          (with-redefs [read-config-file (read-config-file-mock-fn {:instances {"instance-1" nil}})]
             (reset! config (reload-config @config))
             (is (valid-instance? @config "instance-1"))
-            (is (missing-instance? @config "instance-2"))))))))
+            (is (missing-instance? @config "instance-2")))))))
+
+  (testing "log level changes"
+    (let [config (atom nil)]
+      (with-redefs [read-config-file (read-config-file-mock-fn)]
+        (reset! config (init-config repos-dir config-file-name event-notification-handler))
+        (with-redefs [read-config-file (read-config-file-mock-fn {:log-level :debug})]
+          (reset! config (reload-config @config))
+          (is (= :debug (:log-level @config)))
+          (with-redefs [read-config-file (read-config-file-mock-fn {:log-level :warn})]
+            (reset! config (reload-config @config))
+            (is (= :warn (:log-level @config)))))))))
