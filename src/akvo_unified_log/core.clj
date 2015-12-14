@@ -106,6 +106,9 @@
     (statsd/setup (:statsd-host config)
                   (:statsd-port config)
                   :prefix (:statsd-prefix config))
+    (log/merge-config! {:level (:log-level config :info)
+                        :output-fn (partial log/default-output-fn
+                                            {:stacktrace-fonts {}})})
     (let [port (Integer. (:port config 3030))
           server (jetty/run-jetty (-> (app (atom config))
                                       wrap-params
