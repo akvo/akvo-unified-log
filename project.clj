@@ -1,4 +1,4 @@
-(defproject akvo-unified-log "0.1.0-SNAPSHOT"
+(defproject akvo-unified-log "0.1.0"
   :description "FIXME: write description"
   :url "http://github.com/akvo/akvo-unified-log"
   :license {:name "GNU Affero General Public License"
