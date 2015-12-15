@@ -30,12 +30,12 @@
 (defqueries "db.sql")
 
 (defn last-fetch-date [db-spec]
-  (let [ts (first (last-timestamp db-spec))]
+  (let [ts (first (last-timestamp {} {:connection db-spec}))]
     (java.util.Date. (long (or (:timestamp ts) 0)))))
 
 (defn insert-events [db-spec events]
   (doseq [event events]
-    (insert<! db-spec event))
+    (insert<! {:payload event} {:connection db-spec}))
   (count events))
 
 (defn payload [entity]
