@@ -11,7 +11,8 @@
             [ring.middleware.json :refer (wrap-json-body)]
             [compojure.core :refer (routes ANY)]
             [yesql.core :refer (defqueries)]
-            [clj-statsd :as statsd]))
+            [clj-statsd :as statsd])
+  (:import [org.postgresql.util PSQLException]))
 
 (defn event-log-spec [org-config]
   {:subprotocol "postgresql"
@@ -35,7 +36,9 @@
 
 (defn insert-events [db-spec events]
   (doseq [event events]
-    (insert<! {:payload event} {:connection db-spec}))
+    (try (insert<! {:payload event} {:connection db-spec})
+         (catch PSQLException e
+           (log/error (.getMessage e)))))
   (count events))
 
 (defn payload [entity]
@@ -52,11 +55,11 @@
       (gae/with-datastore [ds (datastore-spec config)]
         (let [date (last-fetch-date (event-log-spec config))
               _ (log/debugf "Fetching data since %s for %s from GAE" date (:org-id config))
-              query (.prepare ds (query/query) {:kind "EventQueue"
-                                                :filter (query/> "createdDateTime" date)
-                                                :sort-by "createdDateTime"})
-              query-result (.asQueryResultList query {:limit 300})]
-          (loop [query-result query-result]
+              query (.prepare ds (query/query {:kind "EventQueue"
+                                               :filter (query/> "createdDateTime" date)
+                                               :sort-by "createdDateTime"}))
+              first-query-result (.asQueryResultList query (query/fetch-options {:limit 300}))]
+          (loop [query-result first-query-result]
             (when-not (empty? query-result)
               (let [event-count (count query-result)]
                 (->> query-result
@@ -66,7 +69,9 @@
                 (statsd/gauge (format "%s.event_count" (:org-id config)) event-count)
                 (log/debugf "Inserted %s events into event log %s" event-count (:org-id config))
                 (let [cursor (.getCursor query-result)
-                      next-query-result (.asQueryResultList query {:limit 300 :start-cursor cursor})]
+                      next-query-result (.asQueryResultList query
+                                                            (query/fetch-options {:limit 300
+                                                                                  :start-cursor cursor}))]
                   (recur next-query-result))))))))
     (catch Throwable e
       (statsd/increment (format "%s.insert_and_fetch_exception" (:org-id config)))
