@@ -19,6 +19,7 @@
                  [ring/ring-json "0.4.0"]
                  [ring/ring-jetty-adapter "1.4.0"]
                  [com.taoensso/timbre "4.1.4" :exclusions [[org.clojure/tools.reader]]]
+                 [ragtime "0.5.3"]
                  [clj-http "2.0.0"]
                  [liberator "0.14.0"]
                  [compojure "1.4.0"]
