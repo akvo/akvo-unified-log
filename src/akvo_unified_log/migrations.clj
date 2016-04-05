@@ -11,7 +11,8 @@
 (defn create-event-log-db [db-spec org-id]
   (log/infof "Creating database %s" org-id)
   (jdbc/execute! db-spec
-                 [(format "CREATE DATABASE \"%s\"" org-id)]
+                 [(format "CREATE DATABASE \"%s\" WITH TEMPLATE template0 ENCODING 'UTF8'"
+                          org-id)]
                  :transaction? false))
 
 (defn create-initial-table [db-spec]
