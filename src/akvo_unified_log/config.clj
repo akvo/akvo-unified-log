@@ -4,6 +4,7 @@
             [clojure.java.io :as io]
             [clojure.core.async :as async]
             [akvo.commons.git :as git]
+            [akvo-unified-log.migrations :as migrations]
             [taoensso.timbre :as log])
   (:import [com.google.apphosting.utils.config AppEngineWebXmlReader]))
 
@@ -75,6 +76,7 @@
     chan))
 
 (defn subscribe-all [config org-ids]
+  (migrations/migrate-all org-ids config)
   (reduce (fn [config org-id]
             (assoc-in config
                       [:instances org-id :event-subscriber-chan]

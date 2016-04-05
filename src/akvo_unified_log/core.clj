@@ -11,7 +11,8 @@
             [ring.middleware.json :refer (wrap-json-body)]
             [compojure.core :refer (routes ANY)]
             [yesql.core :refer (defqueries)]
-            [clj-statsd :as statsd]))
+            [clj-statsd :as statsd])
+  (:import [org.postgresql.util PSQLException]))
 
 (defn event-log-spec [org-config]
   {:subprotocol "postgresql"
@@ -35,7 +36,9 @@
 
 (defn insert-events [db-spec events]
   (doseq [event events]
-    (insert<! {:payload event} {:connection db-spec}))
+    (try (insert<! {:payload event} {:connection db-spec})
+         (catch PSQLException e
+           (log/error (.getMessage e)))))
   (count events))
 
 (defn payload [entity]
@@ -52,42 +55,35 @@
       (gae/with-datastore [ds (datastore-spec config)]
         (let [date (last-fetch-date (event-log-spec config))
               _ (log/debugf "Fetching data since %s for %s from GAE" date (:org-id config))
-              event-count (->> (query/result ds
-                                             {:kind "EventQueue"
-                                              :filter (query/> "createdDateTime" date)
-                                              :sort-by "createdDateTime"}
-                                             {:limit 300})
-                               seq
-                               (map payload)
-                               (map json/jsonb)
-                               (insert-events (event-log-spec config)))]
-          (if (pos? event-count)
-            (do (statsd/gauge (format "%s.event_count" (:org-id config)) event-count)
+              query (.prepare ds (query/query {:kind "EventQueue"
+                                               :filter (query/> "createdDateTime" date)
+                                               :sort-by "createdDateTime"}))
+              first-query-result (.asQueryResultList query (query/fetch-options {:limit 300}))]
+          (loop [query-result first-query-result]
+            (when-not (empty? query-result)
+              (let [event-count (count query-result)]
+                (->> query-result
+                     (map payload)
+                     (map json/jsonb)
+                     (insert-events (event-log-spec config)))
+                (statsd/gauge (format "%s.event_count" (:org-id config)) event-count)
                 (log/debugf "Inserted %s events into event log %s" event-count (:org-id config))
-                true)
-            (do (log/debugf "No more events for %s" (:org-id config))
-                false)))))
+                (let [cursor (.getCursor query-result)
+                      next-query-result (.asQueryResultList query
+                                                            (query/fetch-options {:limit 300
+                                                                                  :start-cursor cursor}))]
+                  (recur next-query-result))))))))
     (catch Throwable e
       (statsd/increment (format "%s.insert_and_fetch_exception" (:org-id config)))
       (log/error e)
       false)))
-
-(defn put-interval!
-  "Asynchronously put val on chan n times every interval msecs"
-  [chan val n interval]
-  (async/go
-    (dotimes [_ n]
-      (async/>! chan val)
-      (async/<! (async/timeout interval)))))
 
 (defn event-notification-handler
   [org-id event-chan notification-chan]
   (async/go
     (loop []
       (when-let [config (async/<! event-chan)]
-        (when (fetch-and-insert-new-events config)
-          ;; Every 20 second, for 2 minutes
-          (put-interval! notification-chan config 6 20000))
+        (fetch-and-insert-new-events config)
         (recur)))
     (log/infof "Exiting event notification thread for %s" org-id)))
 
