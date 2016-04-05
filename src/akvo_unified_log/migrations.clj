@@ -57,4 +57,4 @@
 
 (defn migrate-all [org-ids config]
   (doseq [org-id org-ids]
-    (migrate org-ids config)))
+    (migrate org-id config)))
