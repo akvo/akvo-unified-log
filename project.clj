@@ -4,7 +4,6 @@
   :license {:name "GNU Affero General Public License"
             :url "https://www.gnu.org/licenses/agpl"}
   :plugins [[lein-environ "1.0.0"]]
-  :pedantic? :abort
   :dependencies [[org.clojure/clojure "1.7.0"]
                  [org.clojure/java.jdbc "0.4.2"]
                  [org.clojure/core.async "0.2.374"]

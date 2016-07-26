@@ -20,10 +20,10 @@
    :port 3030
 
    ;; postgreSQL host, port, username and password
-   :database-host "db-host"
+   :database-host "localhost"
    :database-port "5432"
    :database-user "unilog"
-   :database-password "db-password"
+   :database-password "password"
 
    ;; sentry dsn
    :sentry-dsn "the-sentry-dsn"
