@@ -3,6 +3,7 @@
             [clojure.pprint :as pp]
             [clojure.core.async :as async]
             [akvo-unified-log.config :as config]
+            [akvo-unified-log.db :as db]
             [liberator.core :refer (defresource)]
             [taoensso.timbre :as log]
             [clj-statsd :as statsd]))
@@ -47,3 +48,27 @@
   :post!
   (fn [ctx]
     (reset! config (config/reload-config @config))))
+
+(defresource event-push [config]
+  :available-media-types ["application/json"]
+  :allowed-methods [:post]
+  :processable?
+  (fn [ctx]
+    (let [org-id (get-in ctx [:request :body "orgId"])
+          events (get-in ctx [:request :body "events"])]
+      (if (and org-id events)
+        (assoc ctx :org-id org-id :events events)
+        (do (log/warnf "Invalid POST request body: %s" (get-in ctx [:request :body]))
+          false))))
+  :post!
+  (fn [ctx]
+    (let [org-id (:org-id ctx)
+          org-config (get-in @config [:instances org-id])]
+      (when org-config
+        (let [db-spec (db/event-log-spec org-config)
+              result (db/insert-events db-spec (:events org-id))]
+          (statsd/increment (format "%s.event_push" org-id result))
+          result))))
+  :handle-exception
+  (fn [ctx]
+    (log/error (:exception ctx))))

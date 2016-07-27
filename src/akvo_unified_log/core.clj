@@ -1,6 +1,7 @@
 (ns akvo-unified-log.core
   (:require [akvo.commons.gae :as gae]
             [akvo.commons.gae.query :as query]
+            [akvo-unified-log.db :refer :all]
             [akvo-unified-log.config :as config]
             [akvo-unified-log.json :as json]
             [akvo-unified-log.endpoints :as endpoints]
@@ -9,37 +10,15 @@
             [ring.adapter.jetty :as jetty]
             [ring.middleware.params :refer (wrap-params)]
             [ring.middleware.json :refer (wrap-json-body)]
-            [compojure.core :refer (routes ANY)]
-            [yesql.core :refer (defqueries)]
-            [clj-statsd :as statsd])
-  (:import [org.postgresql.util PSQLException]))
+            [compojure.core :refer (routes ANY POST)]
+            [clj-statsd :as statsd]))
 
-(defn event-log-spec [org-config]
-  {:subprotocol "postgresql"
-   :subname (format "//%s:%s/%s"
-                    (:database-host org-config)
-                    (:database-port org-config 5432)
-                    (:org-id org-config))
-   :user (:database-user org-config)
-   :password (:database-password org-config)})
+
 
 (defn datastore-spec [org-config]
   (assoc (select-keys org-config [:service-account-id :private-key-file])
          :hostname (str (:org-id org-config) ".appspot.com")
          :port 443))
-
-(defqueries "db.sql")
-
-(defn last-fetch-date [db-spec]
-  (let [ts (first (last-timestamp {} {:connection db-spec}))]
-    (java.util.Date. (long (or (:timestamp ts) 0)))))
-
-(defn insert-events [db-spec events]
-  (doseq [event events]
-    (try (insert<! {:payload event} {:connection db-spec})
-         (catch PSQLException e
-           (log/error (.getMessage e)))))
-  (count events))
 
 (defn payload [entity]
   (or (.getProperty entity "payload")
@@ -91,7 +70,8 @@
   (routes
    (ANY "/status" _ (endpoints/status config))
    (ANY "/event-notification" _ (endpoints/event-notification config))
-   (ANY "/reload-config" _ (endpoints/reload-config config))))
+   (ANY "/reload-config" _ (endpoints/reload-config config))
+   (POST "/events" _ (endpoints/event-push config))))
 
 (defn -main [repos-dir config-file-name]
   (let [config (assoc (config/init-config repos-dir
@@ -112,7 +92,3 @@
                                   {:port port :join? false})]
       (log/infof "Unilog started. Listening on %s" port)
       server)))
-
-(comment
-  (def server (-main "/var/tmp/akvo/unified-log" "test.edn"))
-  (.stop server))

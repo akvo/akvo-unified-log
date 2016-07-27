@@ -1,5 +1,7 @@
 #
 .DS_Store
-.lein-env
+.lein-*
+.nrepl-port
 target/
 vagrant/.vagrant/
+\#*#
