@@ -66,7 +66,7 @@
           org-config (get-in @config [:instances org-id])]
       (when org-config
         (let [db-spec (db/event-log-spec org-config)
-              result (db/insert-events db-spec (:events org-id))]
+              result (db/insert-events db-spec (:events ctx))]
           (statsd/increment (format "%s.event_push" org-id result))
           result))))
   :handle-exception
