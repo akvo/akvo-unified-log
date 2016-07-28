@@ -1,12 +1,13 @@
 (ns akvo-unified-log.endpoints
-  (:require [clojure.string :as str]
-            [clojure.pprint :as pp]
-            [clojure.core.async :as async]
-            [akvo-unified-log.config :as config]
+  (:require [akvo-unified-log.config :as config]
             [akvo-unified-log.db :as db]
+            [akvo-unified-log.json :as json]
+            [clj-statsd :as statsd]
+            [clojure.core.async :as async]
+            [clojure.pprint :as pp]
+            [clojure.string :as str]
             [liberator.core :refer (defresource)]
-            [taoensso.timbre :as log]
-            [clj-statsd :as statsd]))
+            [taoensso.timbre :as log]))
 
 (defresource status [config]
   :available-media-types ["text/html"]
@@ -66,7 +67,8 @@
           org-config (get-in @config [:instances org-id])]
       (when org-config
         (let [db-spec (db/event-log-spec org-config)
-              result (db/insert-events db-spec (:events ctx))]
+              events (map json/jsonb (:events ctx))
+              result (db/insert-events db-spec events)]
           (statsd/increment (format "%s.event_push" org-id result))
           result))))
   :handle-exception

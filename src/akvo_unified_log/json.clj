@@ -26,7 +26,9 @@
   [s]
   (doto (PGobject.)
     (.setType "jsonb")
-    (.setValue s)))
+    (.setValue (if (instance? String s)
+                 s
+                 (.writeValueAsString object-mapper s)))))
 
 (defn make-schema-validator [_ root-schema-file]
   (let [file (io/file root-schema-file)
