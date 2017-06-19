@@ -68,8 +68,7 @@
 
 (defn -main [repos-dir config-file-name]
   (let [config (assoc (config/init-config repos-dir
-                                          config-file-name
-                                          event-notification-handler)
+                                          config-file-name)
                       :repos-dir repos-dir
                       :config-file-name config-file-name) ]
     (statsd/setup (:statsd-host config)
