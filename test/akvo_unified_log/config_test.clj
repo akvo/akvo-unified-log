@@ -14,7 +14,7 @@
 
 (def repos-dir "/var/tmp/akvo/unified-log")
 (def config-file-name "test.edn")
-(def event-notification-handler (fn [org-id new-event-chan publish-event-chan]))
+
 (def base-config
   {;; port to run the service
    :port 3030
@@ -55,7 +55,7 @@
 (deftest config-test
   (testing "initialize config without any instances"
     (with-redefs [read-config-file (read-config-file-mock-fn)]
-      (let [config (init-config repos-dir config-file-name event-notification-handler)]
+      (let [config (init-config repos-dir config-file-name)]
         (is (map? config))
         (is (contains? config :instances))
         (is (empty? (:instances config))))))
@@ -63,14 +63,14 @@
   (testing "initialize config with instances"
     (with-redefs [read-config-file (read-config-file-mock-fn {:instances {"instance-1" nil
                                                                           "instance-2" nil}} )]
-      (let [config (init-config repos-dir config-file-name event-notification-handler)]
+      (let [config (init-config repos-dir config-file-name)]
         (is (valid-instance? config "instance-1"))
         (is (valid-instance? config "instance-2")))))
 
   (testing "instances changes"
     (let [config (atom nil)]
       (with-redefs [read-config-file (read-config-file-mock-fn)]
-        (reset! config (init-config repos-dir config-file-name event-notification-handler))
+        (reset! config (init-config repos-dir config-file-name))
         (with-redefs [read-config-file (read-config-file-mock-fn {:instances {"instance-1" nil
                                                                               "instance-2" nil}} )]
           (reset! config (reload-config @config))
@@ -84,7 +84,7 @@
   (testing "log level changes"
     (let [config (atom nil)]
       (with-redefs [read-config-file (read-config-file-mock-fn)]
-        (reset! config (init-config repos-dir config-file-name event-notification-handler))
+        (reset! config (init-config repos-dir config-file-name))
         (with-redefs [read-config-file (read-config-file-mock-fn {:log-level :debug})]
           (reset! config (reload-config @config))
           (is (= :debug (:log-level @config)))
