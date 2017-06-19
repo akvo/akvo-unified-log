@@ -2,7 +2,6 @@
   (:require [clojure.edn :as edn]
             [clojure.set :as set]
             [clojure.java.io :as io]
-            [clojure.core.async :as async]
             [akvo.commons.git :as git]
             [akvo-unified-log.migrations :as migrations]
             [taoensso.timbre :as log])
@@ -61,19 +60,13 @@
            :config-file-name config-file-name)))
 
 (defn unsubscribe [event-notification-pub org-id event-subscriber-chan]
-  (log/infof "Unsubscribing %s from event notifications" org-id)
-  (async/unsub event-notification-pub org-id event-subscriber-chan)
-  (async/close! event-subscriber-chan))
+  (log/infof "Unsubscribing %s from event notifications" org-id))
 
 (defn subscribe [org-id
                  event-notification-pub
                  event-notification-chan
                  event-notification-handler]
-  (log/infof "Subscribing %s for event notifications" org-id)
-  (let [chan (async/chan (async/sliding-buffer 1))]
-    (async/sub event-notification-pub org-id chan)
-    (event-notification-handler org-id chan event-notification-chan)
-    chan))
+  (log/infof "Subscribing %s for event notifications" org-id))
 
 (defn subscribe-all [config org-ids]
   (migrations/migrate-all org-ids config)
@@ -129,11 +122,5 @@
         (subscribe-all (set/difference next-org-ids previous-org-ids)))))
 
 (defn init-config [repos-dir config-file-name event-notification-handler]
-  (let [config (read-config repos-dir config-file-name)
-        event-notification-chan (async/chan (async/sliding-buffer 1000))
-        event-notification-pub (async/pub event-notification-chan :org-id)]
-    (-> config
-        (assoc :event-notification-chan event-notification-chan
-               :event-notification-pub event-notification-pub
-               :event-notification-handler event-notification-handler)
-        (subscribe-all (keys (:instances config))))))
+  (let [config (read-config repos-dir config-file-name)]
+    config))

@@ -3,7 +3,6 @@
             [akvo-unified-log.db :as db]
             [akvo-unified-log.json :as json]
             [clj-statsd :as statsd]
-            [clojure.core.async :as async]
             [clojure.pprint :as pp]
             [clojure.string :as str]
             [liberator.core :refer (defresource)]
@@ -37,7 +36,7 @@
       (log/debugf "Received notification from %s" org-id)
       (statsd/increment (format "%s.event_notification" org-id))
       (if org-config
-        (async/put! (:event-notification-chan @config) org-config)
+        (log/info "FIXME")
         (log/debugf "Notification from %s ignored" org-id))))
   :handle-exception
   (fn [ctx]

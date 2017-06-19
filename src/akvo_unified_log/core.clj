@@ -5,7 +5,6 @@
             [akvo-unified-log.config :as config]
             [akvo-unified-log.json :as json]
             [akvo-unified-log.endpoints :as endpoints]
-            [clojure.core.async :as async]
             [taoensso.timbre :as log]
             [ring.adapter.jetty :as jetty]
             [ring.middleware.params :refer (wrap-params)]
@@ -58,13 +57,8 @@
       false)))
 
 (defn event-notification-handler
-  [org-id event-chan notification-chan]
-  (async/go
-    (loop []
-      (when-let [config (async/<! event-chan)]
-        (fetch-and-insert-new-events config)
-        (recur)))
-    (log/infof "Exiting event notification thread for %s" org-id)))
+  [org-id]
+  (fetch-and-insert-new-events org-id))
 
 (defn app [config]
   (routes
