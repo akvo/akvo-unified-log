@@ -64,8 +64,7 @@
   (routes
    (ANY "/status" _ (endpoints/status config))
    (ANY "/event-notification" _ (endpoints/event-notification config))
-   (ANY "/reload-config" _ (endpoints/reload-config config))
-   (POST "/events" _ (endpoints/event-push config))))
+   (ANY "/reload-config" _ (endpoints/reload-config config))))
 
 (defn -main [repos-dir config-file-name]
   (let [config (assoc (config/init-config repos-dir
