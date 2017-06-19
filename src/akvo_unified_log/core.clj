@@ -9,7 +9,7 @@
             [ring.adapter.jetty :as jetty]
             [ring.middleware.params :refer (wrap-params)]
             [ring.middleware.json :refer (wrap-json-body)]
-            [compojure.core :refer (routes ANY POST)]
+            [compojure.core :refer (routes GET POST)]
             [clj-statsd :as statsd]))
 
 
@@ -56,15 +56,11 @@
       (log/error e)
       false)))
 
-(defn event-notification-handler
-  [org-id]
-  (fetch-and-insert-new-events org-id))
-
 (defn app [config]
   (routes
-   (ANY "/status" _ (endpoints/status config))
-   (ANY "/event-notification" _ (endpoints/event-notification config))
-   (ANY "/reload-config" _ (endpoints/reload-config config))))
+   (GET "/status" _ (endpoints/status config))
+   (POST "/event-notification" _ (endpoints/event-notification config))
+   (POST "/reload-config" _ (endpoints/reload-config config))))
 
 (defn -main [repos-dir config-file-name]
   (let [config (assoc (config/init-config repos-dir

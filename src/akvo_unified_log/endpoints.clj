@@ -9,15 +9,11 @@
             [taoensso.timbre :as log]))
 
 (defresource status [config]
-  :available-media-types ["text/html"]
+  :available-media-types ["application/json"]
   :allowed-methods [:get]
   :handle-ok
   (fn [ctx]
-    (format "<pre>%s</pre>"
-            (str/escape
-             (with-out-str
-               (pp/pprint (keys (:instances @config))))
-             {\< "&lt;" \> "&gt;"}))))
+    (keys (:instances @config))))
 
 (defresource event-notification [config]
   :available-media-types ["application/json"]
