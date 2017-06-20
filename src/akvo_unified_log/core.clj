@@ -1,17 +1,16 @@
 (ns akvo-unified-log.core
-  (:require [akvo.commons.gae :as gae]
-            [akvo.commons.gae.query :as query]
+  (:require [akvo-unified-log.config :as config]
             [akvo-unified-log.db :refer :all]
-            [akvo-unified-log.config :as config]
-            [akvo-unified-log.json :as json]
             [akvo-unified-log.endpoints :as endpoints]
-            [taoensso.timbre :as log]
-            [ring.adapter.jetty :as jetty]
-            [ring.middleware.params :refer (wrap-params)]
-            [ring.middleware.json :refer (wrap-json-body)]
+            [akvo-unified-log.json :as json]
+            [akvo.commons.gae :as gae]
+            [akvo.commons.gae.query :as query]
+            [clj-statsd :as statsd]
             [compojure.core :refer (routes GET POST)]
-            [clj-statsd :as statsd]))
-
+            [ring.adapter.jetty :as jetty]
+            [ring.middleware.json :refer (wrap-json-body)]
+            [ring.middleware.params :refer (wrap-params)]
+            [taoensso.timbre :as log]))
 
 
 (defn datastore-spec [org-config]
@@ -66,7 +65,7 @@
   (let [config (assoc (config/init-config repos-dir
                                           config-file-name)
                       :repos-dir repos-dir
-                      :config-file-name config-file-name) ]
+                      :config-file-name config-file-name)]
     (statsd/setup (:statsd-host config)
                   (:statsd-port config)
                   :prefix (:statsd-prefix config))
