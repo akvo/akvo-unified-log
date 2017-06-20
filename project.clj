@@ -11,7 +11,7 @@
                  [org.clojure/java.jdbc "0.6.1"]
                  [org.postgresql/postgresql "9.4.1212.jre7"]
                  [ragtime "0.7.1"]
-                 [yesql "0.5.1"]
+                 [yesql "0.5.3"]
 
                  ;; GAE SDK
                  [com.google.appengine/appengine-tools-sdk "1.9.53"]
@@ -53,4 +53,5 @@
                   ["vcs" "commit"]
                   ["vcs" "push"]]
   :profiles {:dev {:source-paths ["dev"]
-                   :dependencies [[org.clojure/tools.nrepl "0.2.12"]]}})
+                   :dependencies [[org.clojure/tools.nrepl "0.2.12"]]}
+             :uberjar {:aot :all}})

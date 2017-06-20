@@ -2,6 +2,7 @@
   (:require [akvo-unified-log.config :as config]
             [akvo-unified-log.db :as db]
             [akvo-unified-log.json :as json]
+            [akvo-unified-log.scheduler :as sch]
             [clj-statsd :as statsd]
             [clojure.pprint :as pp]
             [clojure.string :as str]
@@ -13,7 +14,8 @@
   :allowed-methods [:get]
   :handle-ok
   (fn [ctx]
-    (keys (:instances @config))))
+    {:instances (keys (:instances @config))
+     :scheduler (map #(select-keys % [:created-at :desc :initial-delay]) (sch/scheduled-jobs))}))
 
 (defresource event-notification [config]
   :available-media-types ["application/json"]
@@ -29,10 +31,9 @@
   (fn [ctx]
     (let [org-id (:org-id ctx)
           org-config (get-in @config [:instances org-id])]
-      (log/debugf "Received notification from %s" org-id)
       (statsd/increment (format "%s.event_notification" org-id))
-      (if org-config
-        (log/info "FIXME")
+      (if (and org-config (not (sch/scheduled? org-id)))
+        (select-keys (sch/schedule org-id (fn [] (db/fetch-and-insert-new-events org-config))) [:created-at])
         (log/debugf "Notification from %s ignored" org-id))))
   :handle-exception
   (fn [ctx]
