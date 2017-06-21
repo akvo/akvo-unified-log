@@ -13,7 +13,7 @@
   (jdbc/execute! db-spec
                  [(format "CREATE DATABASE \"%s\" WITH TEMPLATE template0 ENCODING 'UTF8'"
                           org-id)]
-                 :transaction? false))
+                 {:transaction? false}))
 
 (defn create-initial-table [db-spec]
   (jdbc/execute! db-spec

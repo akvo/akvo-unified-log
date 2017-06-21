@@ -2,7 +2,7 @@ language:
 - clojure
 
 jdk:
-- oraclejdk8
+- openjdk7 # Unilog server uses JDK7
 
 cache:
   directories:
