@@ -1,8 +1,6 @@
 (ns akvo-unified-log.scheduler
   (:require [overtone.at-at :as at]))
 
-;; Ideally this should be a Component
-
 (defonce ^:private thread-pool nil)
 
 (defonce ^:private delay-in-ms 1)

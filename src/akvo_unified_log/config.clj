@@ -86,7 +86,3 @@
     (update-log-level (:log-level previous-config :info)
                       (:log-level next-config :info))
     next-config))
-
-(defn init-config [repos-dir config-file-name]
-  (let [config (read-config repos-dir config-file-name)]
-    config))

@@ -55,7 +55,7 @@
 (deftest config-test
   (testing "initialize config without any instances"
     (with-redefs [read-config-file (read-config-file-mock-fn)]
-      (let [config (init-config repos-dir config-file-name)]
+      (let [config (read-config repos-dir config-file-name)]
         (is (map? config))
         (is (contains? config :instances))
         (is (empty? (:instances config))))))
@@ -63,14 +63,14 @@
   (testing "initialize config with instances"
     (with-redefs [read-config-file (read-config-file-mock-fn {:instances {"instance-1" nil
                                                                           "instance-2" nil}} )]
-      (let [config (init-config repos-dir config-file-name)]
+      (let [config (read-config repos-dir config-file-name)]
         (is (valid-instance? config "instance-1"))
         (is (valid-instance? config "instance-2")))))
 
   (testing "instances changes"
     (let [config (atom nil)]
       (with-redefs [read-config-file (read-config-file-mock-fn)]
-        (reset! config (init-config repos-dir config-file-name))
+        (reset! config (read-config repos-dir config-file-name))
         (with-redefs [read-config-file (read-config-file-mock-fn {:instances {"instance-1" nil
                                                                               "instance-2" nil}} )]
           (reset! config (reload-config @config))
@@ -84,7 +84,7 @@
   (testing "log level changes"
     (let [config (atom nil)]
       (with-redefs [read-config-file (read-config-file-mock-fn)]
-        (reset! config (init-config repos-dir config-file-name))
+        (reset! config (read-config repos-dir config-file-name))
         (with-redefs [read-config-file (read-config-file-mock-fn {:log-level :debug})]
           (reset! config (reload-config @config))
           (is (= :debug (:log-level @config)))
