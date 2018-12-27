@@ -48,7 +48,8 @@ else
 fi
 
 log Pushing images
-gcloud docker -- push eu.gcr.io/${PROJECT_NAME}/akvo-unilog
+gcloud auth configure-docker
+docker push eu.gcr.io/${PROJECT_NAME}/akvo-unilog
 
 log Deploying
 
