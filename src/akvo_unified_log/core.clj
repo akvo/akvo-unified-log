@@ -31,6 +31,7 @@
     (log/merge-config! {:level (:log-level config :info)
                         :output-fn (partial log/default-output-fn
                                             {:stacktrace-fonts {}})})
+    (migrations/migrate-all (keys (:instances config)) config)
     (let [port (Integer. (:port config 3030))
           config-atom (atom config)
           server (jetty/run-jetty (-> (app config-atom)
@@ -40,7 +41,6 @@
       (scheduler/set-thread-pool (:num-threads config 5))
       (scheduler/set-delay (:fetch-delay config (* 60 5)))
       (log/infof "Unilog started. Listening on %s" port)
-      (migrations/migrate-all (keys (:instances config)) config)
       (reset! system {:jetty server
                       :nrepl (nrepl/start-server :port 7888 :bind (:nrepl-bind config "localhost"))
                       :config-atom config-atom}))))
