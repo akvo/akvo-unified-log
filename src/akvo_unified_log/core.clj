@@ -16,7 +16,7 @@
 
 (defn app [config]
   (routes
-   (GET "/status" _ (endpoints/status config))
+   (GET "/healthz" _ (endpoints/status config))
    (POST "/event-notification" _ (endpoints/event-notification config))
    (POST "/reload-config" _ (endpoints/reload-config config))
    (not-found "Not found")))
