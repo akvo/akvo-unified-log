@@ -52,16 +52,16 @@ gcloud docker -- push eu.gcr.io/${PROJECT_NAME}/akvo-unilog
 
 log Deploying
 
-#sed -e "s/\$TRAVIS_COMMIT/$TRAVIS_COMMIT/" \
-#  -e "s/\${ENVIRONMENT}/${ENVIRONMENT}/" \
-#  -e "s/\${POD_CPU_REQUESTS}/${POD_CPU_REQUESTS}/" \
-#  -e "s/\${POD_MEM_REQUESTS}/${POD_MEM_REQUESTS}/" \
-#  -e "s/\${POD_CPU_LIMITS}/${POD_CPU_LIMITS}/" \
-#  -e "s/\${POD_MEM_LIMITS}/${POD_MEM_LIMITS}/" \
-#  ci/test/akvo-flow-services.yaml.template > akvo-flow-services.yaml
-#
-#kubectl apply -f akvo-flow-services.yaml
-#
+sed -e "s/\$TRAVIS_COMMIT/$TRAVIS_COMMIT/" \
+  -e "s/\${ENVIRONMENT}/${ENVIRONMENT}/" \
+  -e "s/\${POD_CPU_REQUESTS}/${POD_CPU_REQUESTS}/" \
+  -e "s/\${POD_MEM_REQUESTS}/${POD_MEM_REQUESTS}/" \
+  -e "s/\${POD_CPU_LIMITS}/${POD_CPU_LIMITS}/" \
+  -e "s/\${POD_MEM_LIMITS}/${POD_MEM_LIMITS}/" \
+  ci/akvo-unilog.yaml.template > akvo-unilog.yaml
+
+kubectl apply -f akvo-unilog.yaml
+
 #ci/test/wait-for-k8s-deployment-to-be-ready.sh
 
 #docker-compose -p akvo-flow-ci -f docker-compose.yml -f docker-compose.ci.yml run --no-deps tests /import-and-run.sh kubernetes-test

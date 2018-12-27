@@ -18,7 +18,7 @@ spec:
         environment: ${ENVIRONMENT}
     spec:
       volumes:
-        - name: git-keys-volume
+        - name: secret-config
           secret:
              secretName: akvo-unilog
              defaultMode: 0700
@@ -51,9 +51,17 @@ spec:
                name: akvo
                key: environment
         volumeMounts:
-          - name: git-keys-volume
-            mountPath: /root/.ssh
+          - name: "secret-config"
+            mountPath: /root/.ssh/id_rsa
+            subPath: id_rsa
             readOnly: true
+          - name: "secret-config"
+            mountPath: /root/.ssh/id_rsa.pub
+            subPath: id_rsa.pub
+            readOnly: true
+          - name: "secret-config"
+            mountPath: "/etc/config/akvo-unilog/config.edn"
+            subPath: "config.edn"
         livenessProbe:
           httpGet:
             path: /healthz
