@@ -1,7 +1,8 @@
 FROM openjdk:11.0.1-jre-slim
 
 RUN set -ex; apt-get update && \
-    apt-get install -y git openssh-client && \
+    apt-get -qq install -y --no-install-recommends --no-install-suggests \
+    git openssh-client  postgresql-client && \
     rm -rf /var/cache/apt/*
 
 WORKDIR /app
