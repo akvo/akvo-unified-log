@@ -31,7 +31,7 @@
   If it is still reporting failures after the specified time, report a failure."
   ([t form] `(try-assert ~t ~form nil))
   ([t form msg]
-   `(loop [countdown# ~t]
+   `(loop [countdown# ~(* 1000 t)]
       (let [events# (atom [])
             result# (binding [clojure.test/report
                               (fn [ev#] (swap! events# conj ev#))]
