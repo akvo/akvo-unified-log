@@ -1,0 +1,15 @@
+version: "3"
+services:
+ mainnetwork:
+    ports:
+      - "7888:7888"
+      - "3000:3000"
+      - "8889:8888"
+ unilog:
+   build:
+     context: .
+     dockerfile: Dockerfile-dev
+   volumes:
+      - .:/app
+      - ~/.m2:/root/.m2
+      - ~/.lein:/root/.lein

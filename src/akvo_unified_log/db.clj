@@ -9,12 +9,15 @@
 
 (defqueries "db.sql")
 
+(defn event-log-tenant-db-name [{:keys [tenant-database-prefix org-id]}]
+  (str tenant-database-prefix org-id))
+
 (defn event-log-spec [org-config]
   {:subprotocol "postgresql"
    :subname (format "//%s:%s/%s"
-                    (:database-host org-config)
-                    (:database-port org-config 5432)
-                    (:org-id org-config))
+              (:database-host org-config)
+              (:database-port org-config 5432)
+              (event-log-tenant-db-name org-config))
    :user (:database-user org-config)
    :password (:database-password org-config)})
 
@@ -32,8 +35,8 @@
 
 (defn datastore-spec [org-config]
   (assoc (select-keys org-config [:service-account-id :private-key-file])
-         :hostname (str (:org-id org-config) ".appspot.com")
-         :port 443))
+    :hostname (:hostname org-config (str (:org-id org-config) ".appspot.com"))
+    :port (:port org-config 443)))
 
 (defn payload [entity]
   (or (.getProperty entity "payload")

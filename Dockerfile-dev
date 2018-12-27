@@ -1,0 +1,5 @@
+FROM clojure:openjdk-11-lein-2.8.3
+
+WORKDIR /app
+
+CMD [ "dev/start-dev-env.sh" ]

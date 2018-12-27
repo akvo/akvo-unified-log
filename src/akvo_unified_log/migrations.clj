@@ -2,6 +2,7 @@
   (:require [clojure.java.jdbc :as jdbc]
             [ragtime.repl]
             [ragtime.jdbc]
+            [akvo-unified-log.db :as db]
             [taoensso.timbre :as log]))
 
 (defn database-exists? [db-spec db-name]
@@ -19,9 +20,7 @@
   (jdbc/execute! db-spec
                  ["CREATE TABLE IF NOT EXISTS event_log (
                     id BIGSERIAL PRIMARY KEY,
-                    payload JSONB UNIQUE);"])
-  (jdbc/execute! db-spec
-                 ["ALTER TABLE event_log OWNER TO unilog;"]))
+                    payload JSONB UNIQUE);"]))
 
 (defn create-initial-timestamp-idx [db-spec]
   (jdbc/execute! db-spec
@@ -31,30 +30,24 @@
 
 (defn master-database-spec [config]
   {:subprotocol "postgresql"
-   :subname (format "//%s:%s/unilog"
-                    (:database-host config)
-                    (:database-port config 5432))
+   :subname (format "//%s:%s/%s"
+              (:database-host config)
+              (:database-port config 5432)
+              (:database-name config))
    :user (:database-user config)
    :password (:database-password config)})
 
-(defn database-spec [org-id config]
-  (assoc (master-database-spec config)
-         :subname (format "//%s:%s/%s"
-                          (:database-host config)
-                          (:database-port config 5432)
-                          org-id)))
-
-(defn migrate [org-id config]
+(defn migrate [config]
   (let [master-db-spec (master-database-spec config)
-        db-spec (database-spec org-id config)]
-    (when-not (database-exists? master-db-spec org-id)
-      (create-event-log-db master-db-spec org-id)
+        db-spec (db/event-log-spec config)]
+    (when-not (database-exists? master-db-spec (db/event-log-tenant-db-name config))
+      (create-event-log-db master-db-spec (db/event-log-tenant-db-name config))
       (create-initial-table db-spec)
       (create-initial-timestamp-idx db-spec))
-    (log/infof "Migrating %s" org-id)
+    (log/infof "Migrating %s" (:org-id config))
     (ragtime.repl/migrate {:datastore (ragtime.jdbc/sql-database db-spec)
                            :migrations (ragtime.jdbc/load-resources "migrations")})))
 
 (defn migrate-all [org-ids config]
   (doseq [org-id org-ids]
-    (migrate org-id config)))
+    (migrate (assoc config :org-id org-id))))

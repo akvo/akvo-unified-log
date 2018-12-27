@@ -1,0 +1,21 @@
+version: "3"
+services:
+ mainnetwork:
+    image: alpine
+    command: tail -f /dev/null
+ gae-dev-server:
+   build: gae-dev-server
+   network_mode: service:mainnetwork
+   volumes:
+     - ~/.m2:/opt/m2/
+ unilog:
+   network_mode: service:mainnetwork
+ unilog-db:
+   build:
+     context: postgres
+   environment:
+     - POSTGRES_PASSWORD=akvo
+   volumes:
+     - pg-data:/var/lib/postgresql/data
+volumes:
+  pg-data:

@@ -1,0 +1,21 @@
+version: "3"
+services:
+
+  unilog:
+    volumes:
+      - ./dev:/app/dev
+      - ./dev:/etc/config/akvo-flow-services
+    image: "eu.gcr.io/${PROJECT_NAME}/akvo-unilog:$TRAVIS_COMMIT"
+
+  tests:
+    image: akvo-unilog-dev:develop
+    network_mode: service:mainnetwork
+    environment:
+     - LOG_LEVEL=info
+    volumes:
+      - .:/app
+      - ~/.m2:/root/.m2
+      - ~/.lein:/root/.lein
+    depends_on:
+      - unilog
+    command: "true"
