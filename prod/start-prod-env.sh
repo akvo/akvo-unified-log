@@ -17,6 +17,7 @@ if [ ! -d "/tmp/here/akvo-flow-server-config" ]; then
         cd ${current_dir}
     else
         echo "Checking out Github repo"
+        ssh-keyscan github.com >> ~/.ssh/known_hosts
         git clone git@github.com:akvo/akvo-flow-server-config.git /tmp/here/akvo-flow-server-config
     fi
 fi
