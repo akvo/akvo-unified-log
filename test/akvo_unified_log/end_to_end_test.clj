@@ -67,10 +67,12 @@
       (add-event (+ 1 new-event-timestamp))
       (collect-new-events-from-flow)
       (test-util/try-assert 10
-        (println "how many inside" (jdbc/query (db/event-log-spec (db-spec)) ["select count(*) from event_log"]))
-        (is
-          (= [new-event-timestamp (+ 1 new-event-timestamp)]
-            (events-since log-position)))))
+        (do
+          (println "how many inside" (jdbc/query (db/event-log-spec (db-spec)) ["select count(*) from event_log"]))
+          (println "how many inside" (jdbc/query (db/event-log-spec (db-spec)) ["select * from event_log"]))
+          (is
+            (= [new-event-timestamp (+ 1 new-event-timestamp)]
+              (events-since log-position))))))
 
     (let [new-log-position (last-log-position)]
       (testing "old events are ignored"
