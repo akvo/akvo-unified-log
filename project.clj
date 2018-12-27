@@ -45,17 +45,14 @@
                  [clj-http "3.9.1"]
 
                  ;; Environment variables
-                 [environ "1.1.0"]]
+                 [environ "1.1.0"]
+
+                 [org.clojure/tools.nrepl "0.2.13"]]
   :main akvo-unified-log.core
-  :release-tasks [["vcs" "assert-committed"]
-                  ["change" "version"
-                   "leiningen.release/bump-version" "release"]
-                  ["vcs" "commit"]
-                  ["vcs" "tag"]
-                  ;; ["deploy"]
-                  ["change" "version" "leiningen.release/bump-version"]
-                  ["vcs" "commit"]
-                  ["vcs" "push"]]
-  :profiles {:dev {:source-paths ["dev"]
-                   :dependencies [[org.clojure/tools.nrepl "0.2.13"]]}
+  :uberjar-name "akvo-unilog.jar"
+  :test-selectors {:default (fn [m] (not (or (:integration m) (:kubernetes-test m) (:wip m))))
+                   :integration (fn [m] (and (:integration m) (not (:wip m))))
+                   :kubernetes-test :kubernetes-test}
+
+  :profiles {:dev {:source-paths ["dev"]}
              :uberjar {:aot :all}})
