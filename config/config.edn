@@ -1,7 +1,0 @@
-{:config-folder "../../akvo-flow-server-config"
- :event-schema-file "./resources/schema/event.json"
- :database-user "postgres"
- :database-password ""
- :remote-api-email ""
- :remote-api-password ""
- :port 3030}
