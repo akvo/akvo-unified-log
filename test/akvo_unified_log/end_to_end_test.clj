@@ -63,22 +63,16 @@
   (let [new-event-timestamp (System/currentTimeMillis)
         log-position (last-log-position)]
     (testing "new events are picked up"
-      (println "the log position" log-position)
-      (println "how many" (jdbc/query (db/event-log-spec (db-spec)) ["select count(*) from event_log"]))
       (add-event new-event-timestamp)
       (add-event (+ 1 new-event-timestamp))
       (collect-new-events-from-flow)
       (test-util/try-assert 10
-        (do
-          (println "how many inside" (jdbc/query (db/event-log-spec (db-spec)) ["select count(*) from event_log"]))
-          (println "how many inside" (jdbc/query (db/event-log-spec (db-spec)) ["select * from event_log"]))
-          (is
-            (= [new-event-timestamp (+ 1 new-event-timestamp)]
-              (events-since log-position))))))
+        (is
+          (= [new-event-timestamp (+ 1 new-event-timestamp)]
+            (events-since log-position)))))
 
     (let [new-log-position (last-log-position)]
       (testing "old events are ignored"
-        (println "the new log position" new-log-position)
         (add-event (dec new-event-timestamp))
         (add-event (+ 2 new-event-timestamp))
         (collect-new-events-from-flow)
