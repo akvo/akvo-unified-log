@@ -25,6 +25,6 @@ docker tag eu.gcr.io/${PROJECT_NAME}/akvo-unilog:$TRAVIS_COMMIT eu.gcr.io/${PROJ
 log Starting docker compose env
 docker-compose -p akvo-unilog-ci -f docker-compose.yml -f docker-compose.ci.yml up -d --build
 log Running integration tests
-docker-compose -p akvo-unilog-ci -f docker-compose.yml -f docker-compose.ci.yml run --no-deps tests lein test :integration
+docker-compose -p akvo-unilog-ci -f docker-compose.yml -f docker-compose.ci.yml run --no-deps tests dev/start-dev-env.sh integration-test
 
 log Done

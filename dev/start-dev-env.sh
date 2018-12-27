@@ -21,4 +21,8 @@ fi
 
 ./dev/wait-for-dependencies.sh
 
-lein run dev/dev-config.edn
+if [[ "$1" == "integration-test" ]]; then
+    lein test :integration
+else
+    lein run dev/dev-config.edn
+fi

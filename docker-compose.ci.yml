@@ -16,6 +16,9 @@ services:
       - .:/app
       - ~/.m2:/root/.m2
       - ~/.lein:/root/.lein
+      - pg-data:/pg-certs:ro
     depends_on:
       - unilog
     command: "true"
+    environment:
+      - PGSSLROOTCERT=/pg-certs/server.crt
