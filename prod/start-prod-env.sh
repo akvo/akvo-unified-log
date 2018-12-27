@@ -21,4 +21,8 @@ if [ ! -d "/tmp/here/akvo-flow-server-config" ]; then
     fi
 fi
 
+if [[ "${WAIT_FOR_DEPS:=false}" = "true" ]]; then
+  /app/dev/wait-for-dependencies.sh
+fi
+
 java -jar akvo-unilog.jar /etc/config/akvo-unilog/config.edn

@@ -2,6 +2,8 @@ version: "3"
 services:
 
   unilog:
+    environment:
+      - WAIT_FOR_DEPS=true
     volumes:
       - ./dev:/app/dev
       - ./dev/dev-config.edn:/etc/config/akvo-unilog/config.edn
