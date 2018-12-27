@@ -1,4 +1,4 @@
-{:database-host "unilog-db"
+{:database-host "postgres"
  :database-name "unilogdb"
  :database-user "unilog_username"
  :database-password "unilog_password"

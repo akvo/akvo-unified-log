@@ -53,7 +53,7 @@
 
 (defn check-servers-up []
   (wait-for-server "localhost" 3030)
-  (wait-for-server "unilog-db" 5432)
+  (wait-for-server "postgres" 5432)
   (wait-for-server "localhost" 8888))
 
 (defn fixture [f]

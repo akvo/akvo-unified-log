@@ -35,6 +35,7 @@
               (:database-port config 5432)
               (:database-name config))
    :user (:database-user config)
+   :ssl true
    :password (:database-password config)})
 
 (defn migrate [config]

@@ -18,6 +18,7 @@
               (:database-host org-config)
               (:database-port org-config 5432)
               (event-log-tenant-db-name org-config))
+   :ssl true
    :user (:database-user org-config)
    :password (:database-password org-config)})
 

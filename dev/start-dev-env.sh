@@ -19,4 +19,6 @@ if [ ! -d "/tmp/repos-dir" ]; then
     mkdir "/tmp/repos-dir"
 fi
 
+./dev/wait-for-dependencies.sh
+
 lein run dev/dev-config.edn

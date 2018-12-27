@@ -1,5 +1,10 @@
 FROM clojure:openjdk-11-lein-2.8.3
 
+RUN set -ex; apt-get update && \
+    apt-get -qq install -y --no-install-recommends --no-install-suggests \
+    postgresql-client && \
+    rm -rf /var/cache/apt/*
+
 WORKDIR /app
 
 CMD [ "dev/start-dev-env.sh" ]
