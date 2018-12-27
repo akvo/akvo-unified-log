@@ -29,13 +29,12 @@
 (defmacro try-assert
   "Waits for the given form to report no failures using 100ms intervals up to the specified time.
   If it is still reporting failures after the specified time, report a failure."
-  ([t form] `(try-assert ~t ~form nil))
-  ([t form msg]
+  ([t & form]
    `(loop [countdown# ~(* 1000 t)]
       (let [events# (atom [])
             result# (binding [clojure.test/report
                               (fn [ev#] (swap! events# conj ev#))]
-                      (clojure.test/try-expr ~msg ~form))]
+                      (clojure.test/try-expr ~msg ~@form))]
         (if (and (seq (remove #(= (:type %) :pass) @events#))
               (> countdown# 0))
           (do

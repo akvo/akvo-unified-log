@@ -44,10 +44,12 @@
   (assoc (aero/read-config "dev/dev-config.edn") :org-id "example"))
 
 (defn last-log-position []
-  (->
-    (jdbc/query (db/event-log-spec (db-spec)) "select max(id) from event_log")
-    first
-    (:max 0)))
+  (or
+    (->
+      (jdbc/query (db/event-log-spec (db-spec)) "select max(id) from event_log")
+      first
+      :max)
+    0))
 
 (defn events-since [position]
   (->>
