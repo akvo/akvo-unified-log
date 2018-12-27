@@ -64,18 +64,20 @@
       (add-event new-event-timestamp)
       (add-event (+ 1 new-event-timestamp))
       (collect-new-events-from-flow)
-      (test-util/try-for "Item not in DB" 10
-        (= [new-event-timestamp (+ 1 new-event-timestamp)]
-          (events-since log-position))))
+      (test-util/try-assert 10
+        (is
+          (= [new-event-timestamp (+ 1 new-event-timestamp)]
+            (events-since log-position)))))
 
     (let [new-log-position (last-log-position)]
       (testing "old events are ignored"
         (add-event (dec new-event-timestamp))
         (add-event (+ 2 new-event-timestamp))
         (collect-new-events-from-flow)
-        (test-util/try-for "Item not in DB" 10
-          (= [(+ 2 new-event-timestamp)]
-            (events-since new-log-position)))))))
+        (test-util/try-assert 10
+          (is
+            (= [(+ 2 new-event-timestamp)]
+              (events-since new-log-position))))))))
 
 (comment
   (->> (http/post (str "http://localhost:3030" "/reload-config")))
