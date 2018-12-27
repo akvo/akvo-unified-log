@@ -24,6 +24,9 @@ fi
 
 if [[ "${WAIT_FOR_DEPS:=false}" = "true" ]]; then
   /app/dev/wait-for-dependencies.sh
+else
+  mkdir /root/.postgresql
+  cp /etc/ssl/certs/ca-certificates.crt /root/.postgresql/root.crt
 fi
 
 java -jar akvo-unilog.jar /etc/config/akvo-unilog/config.edn

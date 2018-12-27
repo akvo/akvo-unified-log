@@ -45,8 +45,6 @@ spec:
                fieldPath: metadata.namespace
          - name: APP_VERSION
            value: $TRAVIS_COMMIT
-         - name: PGSSLROOTCERT
-           value: /etc/ssl/certs/ca-certificates.crt
          - name: ENV_NAME
            valueFrom:
              configMapKeyRef:
