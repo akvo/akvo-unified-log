@@ -13,6 +13,7 @@
                  [org.postgresql/postgresql "42.2.5"]
                  [ragtime "0.8.0"]
                  [yesql "0.5.3"]
+                 [hikari-cp "2.6.0"]
 
                  ;; GAE SDK
                  [com.google.appengine/appengine-tools-sdk "1.9.71"]

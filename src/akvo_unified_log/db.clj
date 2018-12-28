@@ -11,19 +11,6 @@
 
 (defqueries "db.sql")
 
-(defn event-log-tenant-db-name [{:keys [tenant-database-prefix org-id]}]
-  (str tenant-database-prefix org-id))
-
-(defn event-log-spec [org-config]
-  {:subprotocol "postgresql"
-   :subname (format "//%s:%s/%s"
-              (:database-host org-config)
-              (:database-port org-config 5432)
-              (event-log-tenant-db-name org-config))
-   :ssl true
-   :user (:database-user org-config)
-   :password (:database-password org-config)})
-
 (defmacro metrics
   [fn-name config & body]
   `(let [labels# (merge {:fn ~fn-name, :result "success"} {:tenant (:org-id ~config)})
@@ -36,14 +23,14 @@
 
 (defn last-fetch-date [config]
   (metrics "last-fetch-date" config
-    (let [ts (first (last-timestamp {} {:connection (event-log-spec config)}))]
+    (let [ts (first (last-timestamp {} {:connection (:jdbc-spec config)}))]
       (java.util.Date. (long (or (:timestamp ts) 0))))))
 
 (defn insert-events [config events]
   (doseq [event events]
     (try
       (metrics "insert-events" config
-        (insert<! {:payload event} {:connection (event-log-spec config)}))
+        (insert<! {:payload event} {:connection (:jdbc-spec config)}))
       (catch PSQLException e
         (log/error (.getMessage e)))))
   (count events))

@@ -8,7 +8,8 @@
             [clj-http.client :as http]
             [cheshire.core :as json]
             [clojure.java.jdbc :as jdbc]
-            [aero.core :as aero])
+            [aero.core :as aero]
+            [akvo-unified-log.config :as config])
   (:import (com.google.appengine.api.datastore Query DatastoreService Entity)))
 
 (defn insert!
@@ -41,19 +42,19 @@
      :form-params {:orgId "example"}}))
 
 (defn db-spec []
-  (assoc (aero/read-config "dev/dev-config.edn") :org-id "example"))
+  (config/db-uri (aero/read-config "dev/dev-config.edn") "example"))
 
 (defn last-log-position []
   (or
     (->
-      (jdbc/query (db/event-log-spec (db-spec)) "select max(id) from event_log")
+      (jdbc/query (db-spec) "select max(id) from event_log")
       first
       :max)
     0))
 
 (defn events-since [position]
   (->>
-    (jdbc/query (db/event-log-spec (db-spec)) ["select * from event_log where id > ?" position])
+    (jdbc/query (db-spec) ["select * from event_log where id > ?" position])
     (map (fn [x] (update x :payload (fn [content]
                                       (json/parse-string (.getValue content) true)))))
     (map (comp :timestamp :context :payload))
@@ -103,5 +104,5 @@
   (http/post (str "https://unilog.akvotest.org" "/event-notification")
     {:as :json
      :content-type :json
-     :form-params {:orgId "akvoflow-uat1"}})
+     :form-params {:orgId "akvoflow-uat2"}})
   )

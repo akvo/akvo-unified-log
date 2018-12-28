@@ -28,7 +28,7 @@
     (log/merge-config! {:level (:log-level config :info)
                         :output-fn (partial log/default-output-fn
                                      {:stacktrace-fonts {}})})
-    (migrations/migrate-all (keys (:instances config)) config)
+    (migrations/migrate-all config)
     (let [port (Integer. (:port config 3030))
           config-atom (atom config)
           server (jetty/run-jetty (-> (app config-atom)
@@ -46,6 +46,8 @@
 
 (comment
  
+  (reset! (:config-atom (deref system)) (config/read-config "dev/dev-config.edn"))
+
   (.stop (-> system deref :jetty))
   (do
     (.stop j)
