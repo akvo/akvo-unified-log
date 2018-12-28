@@ -31,9 +31,6 @@
                  ;; API
                  [liberator "0.15.2"]
 
-                 ;; statsd -> graphite
-                 [clj-statsd "0.4.0"]
-
                  ;; ObjectMapper (JSON serialization)
                  [com.fasterxml.jackson.core/jackson-core "2.9.8"]
                  [com.fasterxml.jackson.core/jackson-databind "2.9.8"]
@@ -47,7 +44,11 @@
                  ;; Environment variables
                  [environ "1.1.0"]
 
-                 [org.clojure/tools.nrepl "0.2.13"]]
+                 [org.clojure/tools.nrepl "0.2.13"]
+
+                 [iapetos "0.1.8"]
+                 [io.prometheus/simpleclient_hotspot "0.6.0"]
+                 [io.prometheus/simpleclient_jetty "0.6.0"]]
   :main akvo-unified-log.core
   :uberjar-name "akvo-unilog.jar"
   :test-selectors {:default (fn [m] (not (or (:integration m) (:kubernetes-test m) (:wip m))))

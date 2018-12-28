@@ -79,7 +79,11 @@
         (test-util/try-assert 10
           (is
             (= [(+ 2 new-event-timestamp)]
-              (events-since new-log-position))))))))
+              (events-since new-log-position)))))))
+  (testing "prometheus stats for GAE calls"
+    (is (re-find
+          #"fn_duration_seconds_bucket.*query-gae"
+          (:body (http/get (str test-util/unilog-url "/metrics")))))))
 
 (comment
   (->> (http/post (str "http://localhost:3030" "/reload-config")))
@@ -93,4 +97,11 @@
                    :answerType "VALUE",
                    :type "ANSWER"},
           :context {:timestamp 1429824995568, :source {:type "SYSTEM"}},
-          :eventType "answerCreated"}))
+          :eventType "answerCreated"})
+
+  (http/get "https://unilog.akvotest.org/healthz")
+  (http/post (str "https://unilog.akvotest.org" "/event-notification")
+    {:as :json
+     :content-type :json
+     :form-params {:orgId "akvoflow-uat1"}})
+  )

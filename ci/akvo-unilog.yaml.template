@@ -16,6 +16,9 @@ spec:
         akvo-unilog-version: $TRAVIS_COMMIT
         app: akvo-unilog
         environment: ${ENVIRONMENT}
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '3030'
     spec:
       volumes:
         - name: secret-config

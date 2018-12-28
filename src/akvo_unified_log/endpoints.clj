@@ -1,11 +1,8 @@
 (ns akvo-unified-log.endpoints
   (:require [akvo-unified-log.config :as config]
             [akvo-unified-log.db :as db]
-            [akvo-unified-log.json :as json]
             [akvo-unified-log.scheduler :as sch]
-            [clj-statsd :as statsd]
-            [clojure.pprint :as pp]
-            [clojure.string :as str]
+            [iapetos.core :as prometheus]
             [liberator.core :refer (defresource)]
             [taoensso.timbre :as log]))
 
@@ -31,7 +28,7 @@
   (fn [ctx]
     (let [org-id (:org-id ctx)
           org-config (get-in @config [:instances org-id])]
-      (statsd/increment (format "%s.event_notification" org-id))
+      (prometheus/inc config/metrics-collector :event-notifications {:tenant org-id})
       (if (and org-config (not (sch/scheduled? org-id)))
         (select-keys (sch/schedule org-id (fn [] (db/fetch-and-insert-new-events org-config))) [:created-at])
         (log/debugf "Notification from %s ignored" org-id))))

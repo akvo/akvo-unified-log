@@ -3,11 +3,36 @@
             [akvo.commons.git :as git]
             [aero.core :as aero]
             [taoensso.timbre :as log]
-            [environ.core :refer [env]])
+            [environ.core :refer [env]]
+            [iapetos.collector.ring :as ring]
+            [iapetos.collector.exceptions :as ex]
+            [iapetos.core :as prometheus]
+            [iapetos.collector.jvm :as jvm])
   (:import [com.google.apphosting.utils.config AppEngineWebXmlReader]))
 
 (def valid-log-levels
   #{:trace :debug :info :warn :error :fatal :report})
+
+(def metrics-collector
+  (->
+    (prometheus/collector-registry)
+    (jvm/initialize)
+    (prometheus/register
+      (prometheus/counter :event-notifications {:labels [:tenant]})
+      (prometheus/histogram
+        :fn/duration-seconds
+        {:description "the time elapsed during execution of the observed function."
+         :buckets [0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10]
+         :labels [:fn :tenant]})
+      (prometheus/counter
+        :fn/runs-total
+        {:description "the total number of finished runs of the observed function."
+         :labels [:fn :result :tenant]})
+      (ex/exception-counter
+        :fn/exceptions-total
+        {:description "the total number and type of exceptions for the observed function."
+         :labels [:fn :tenant]}))
+    (ring/initialize)))
 
 (defn get-instance-properties
   [path]
