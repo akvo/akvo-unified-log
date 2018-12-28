@@ -37,7 +37,7 @@
                                     wrap-json-body)
                    {:port port :join? false})]
       (scheduler/set-thread-pool (:num-threads config 5))
-      (scheduler/set-delay (:fetch-delay config (* 60 5)))
+      (scheduler/set-delays (:fetch-delay config [60 900]))
       (log/infof "Unilog started. Listening on %s" port)
       (reset! system {:jetty server
                       :nrepl (nrepl/start-server :port 7888 :bind (:nrepl-bind config "localhost"))

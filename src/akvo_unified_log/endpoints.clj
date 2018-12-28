@@ -29,7 +29,7 @@
     (let [org-id (:org-id ctx)
           org-config (get-in @config [:instances org-id])]
       (prometheus/inc config/metrics-collector :event-notifications {:tenant org-id})
-      (if (and org-config (not (sch/scheduled? org-id)))
+      (if org-config
         (select-keys (sch/schedule org-id (fn [] (db/fetch-and-insert-new-events org-config))) [:created-at])
         (log/debugf "Notification from %s ignored" org-id))))
   :handle-exception
