@@ -7,7 +7,8 @@
             [iapetos.core :as prometheus]
             [iapetos.collector.exceptions :as ex]
             [akvo-unified-log.config :as config])
-  (:import [org.postgresql.util PSQLException]))
+  (:import [org.postgresql.util PSQLException]
+           (java.util.concurrent.locks Lock)))
 
 (defqueries "db.sql")
 
@@ -50,15 +51,12 @@
       (query/fetch-options
         (merge {:limit 300} opts)))))
 
-(defn fetch-and-insert-new-events
-  "Fetch EventQueue data from a FLOW instance and insert it into the
-  corresponding postgres event log. Returns true if some events were
-  inserted and false otherwise."
+(defn- fetch-and-insert-new-events*
   [config]
   (try
     (gae/with-datastore [ds (datastore-spec config)]
       (let [date (last-fetch-date config)
-            _ (log/debugf "Fetching data since %s for %s from GAE" date (:org-id config))
+            _ (log/infof "Fetching data since %s for %s from GAE" date (:org-id config))
             query (.prepare ds (query/query {:kind "EventQueue"
                                              :filter (query/> "createdDateTime" date)
                                              :sort-by "createdDateTime"}))
@@ -70,10 +68,22 @@
                 (map payload)
                 (map json/jsonb)
                 (insert-events config))
-              (log/debugf "Inserted %s events into event log %s" event-count (:org-id config))
+              (log/infof "Inserted %s events into event log %s" event-count (:org-id config))
               (let [cursor (.getCursor query-result)
                     next-query-result (query-gae config query {:start-cursor cursor})]
                 (recur next-query-result)))))))
     (catch Throwable e
       (log/error e)
       false)))
+
+(defn- fetch-and-insert-new-events
+  "Fetch EventQueue data from a FLOW instance and insert it into the
+  corresponding postgres event log. Returns true if some events were
+  inserted and false otherwise."
+  [config]
+  (let [lock ^Lock (:lock config)]
+    (if (.tryLock lock)
+      (try
+        (fetch-and-insert-new-events* config)
+        (finally (.unlock lock)))
+      (log/infof "Skip fetching. Another thread already fetching events for %s" (:org-id config)))))

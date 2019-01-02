@@ -11,7 +11,8 @@
             [hikari-cp.core :as hikari])
   (:import [com.google.apphosting.utils.config AppEngineWebXmlReader]
            (com.zaxxer.hikari HikariConfig)
-           (java.net URLEncoder)))
+           (java.net URLEncoder)
+           (java.util.concurrent.locks ReentrantLock)))
 
 (def valid-log-levels
   #{:trace :debug :info :warn :error :fatal :report})
@@ -87,7 +88,8 @@
         instance-config (reduce
                           (fn [result [org-id instance-specific-config]]
                             (assoc result org-id
-                                          (merge {:org-id org-id}
+                                          (merge {:org-id org-id
+                                                  :lock (ReentrantLock.)}
                                             (create-db-pool config org-id)
                                             (read-remote-api-credentials (-> config :flow-server-config-repo :local-path) org-id)
                                             instance-specific-config)))
