@@ -76,7 +76,7 @@
       (log/error e)
       false)))
 
-(defn- fetch-and-insert-new-events
+(defn fetch-and-insert-new-events
   "Fetch EventQueue data from a FLOW instance and insert it into the
   corresponding postgres event log. Returns true if some events were
   inserted and false otherwise."
