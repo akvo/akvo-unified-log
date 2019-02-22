@@ -28,4 +28,4 @@
   (locking delays-in-ms
     (stop-all-jobs org-id)
     (doseq [delay delays-in-ms]
-      (at/after delay f thread-pool :desc org-id))))
+      (at/after delay #(f delay) thread-pool :desc org-id))))

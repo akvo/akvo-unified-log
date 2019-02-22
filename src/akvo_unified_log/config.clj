@@ -17,7 +17,7 @@
 (def valid-log-levels
   #{:trace :debug :info :warn :error :fatal :report})
 
-(defonce metrics-collector
+(def metrics-collector
   (->
     (prometheus/collector-registry)
     (jvm/initialize)
@@ -31,7 +31,7 @@
       (prometheus/counter
         :fn/runs-total
         {:description "the total number of finished runs of the observed function."
-         :labels [:fn :result :tenant]})
+         :labels [:fn :result :tenant :pull-delay]})
       (ex/exception-counter
         :fn/exceptions-total
         {:description "the total number and type of exceptions for the observed function."

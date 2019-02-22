@@ -84,6 +84,9 @@
   (testing "prometheus stats for GAE calls"
     (is (re-find
           #"fn_duration_seconds_bucket.*query-gae"
+          (:body (http/get (str test-util/unilog-url "/metrics")))))
+    (is (re-find
+          #"fn_runs_total.*query-gae.*pull_delay"
           (:body (http/get (str test-util/unilog-url "/metrics")))))))
 
 (comment

@@ -14,7 +14,8 @@
 
 (defmacro metrics
   [fn-name config & body]
-  `(let [labels# (merge {:fn ~fn-name, :result "success"} {:tenant (:org-id ~config)})
+  `(let [labels# (merge {:fn ~fn-name, :result "success"} {:tenant (:org-id ~config)
+                                                           :pull-delay (:metrics/pull-delay ~config)})
          failure-labels# (assoc labels# :result "failure")]
      (prometheus/with-success-counter (config/metrics-collector :fn/runs-total labels#)
        (prometheus/with-failure-counter (config/metrics-collector :fn/runs-total failure-labels#)
