@@ -13,7 +13,7 @@ if [ -z "${TRAVIS_COMMIT:-}" ]; then
     export TRAVIS_COMMIT=local
 fi
 
-if [[ ! "${TRAVIS_TAG:-}" =~ promote-.* ]]; then
+if [[ "${TRAVIS_TAG:-}" =~ promote-.* ]]; then
     log "Skipping build as it is a prod promotion"
     exit 0
 fi
