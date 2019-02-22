@@ -4,8 +4,8 @@
  :database-password "unilog_password"
  :log-level :debug
  :tenant-database-prefix "u_"
- :instances {"example" {:hostname "localhost"
-                        :port 8888}}
+ :instance-specific-config {"example" {:hostname "localhost"
+                                       :port 8888}}
  :nrepl-bind "0.0.0.0"
  :flow-server-config-repo {:url "/tmp/here/akvo-flow-server-config"
                            :local-path "/tmp/here"}

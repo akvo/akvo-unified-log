@@ -28,7 +28,6 @@
     (log/merge-config! {:level (:log-level config :info)
                         :output-fn (partial log/default-output-fn
                                      {:stacktrace-fonts {}})})
-    (migrations/migrate-all config)
     (let [port (Integer. (:port config 3030))
           config-atom (atom config)
           server (jetty/run-jetty (-> (app config-atom)

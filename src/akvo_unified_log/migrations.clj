@@ -2,7 +2,6 @@
   (:require [clojure.java.jdbc :as jdbc]
             [ragtime.repl]
             [ragtime.jdbc]
-            [akvo-unified-log.db :as db]
             [taoensso.timbre :as log]))
 
 (defn database-exists? [db-spec db-name]
@@ -48,7 +47,3 @@
     (log/infof "Migrating %s" (:org-id org-config))
     (ragtime.repl/migrate {:datastore (ragtime.jdbc/sql-database db-spec)
                            :migrations (ragtime.jdbc/load-resources "migrations")})))
-
-(defn migrate-all [config]
-  (doseq [[_ org-config] (:instances config)]
-    (migrate org-config config)))

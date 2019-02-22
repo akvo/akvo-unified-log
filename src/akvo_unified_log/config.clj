@@ -17,7 +17,7 @@
 (def valid-log-levels
   #{:trace :debug :info :warn :error :fatal :report})
 
-(def metrics-collector
+(defonce metrics-collector
   (->
     (prometheus/collector-registry)
     (jvm/initialize)
@@ -55,10 +55,14 @@
     {:service-account-id (get instance-properties "serviceAccountId")
      :private-key-file (format "%s/%s.p12" path org-id)}))
 
+(defonce clone-lock (Object.))
+
 (defn clone-flow-server-config
   [{:keys [url local-path]}]
-  (log/info "Cloning akvo-flow-server-config to" local-path)
-  (git/clone-or-pull local-path url))
+  (locking clone-lock
+    (log/info "Cloning akvo-flow-server-config to" local-path)
+    (git/clone-or-pull local-path url)
+    (log/info "Cloning done")))
 
 (defn event-log-tenant-db-name [tenant-database-prefix org-id]
   (str tenant-database-prefix org-id))
@@ -80,25 +84,18 @@
                                                      (.setInitializationFailTimeout config -1))
                                         :maximum-pool-size 2})}})
 
+(defn instance-config [config org-id]
+  (merge {:org-id org-id
+          :lock (ReentrantLock.)}
+    (create-db-pool config org-id)
+    (read-remote-api-credentials (-> config :flow-server-config-repo :local-path) org-id)
+    (get-in config [:instance-specific-config org-id])))
+
 (defn read-config
   [config-file-name]
   (log/info "Reading config" config-file-name)
-  (let [config (aero/read-config config-file-name)
-        _ (clone-flow-server-config (:flow-server-config-repo config))
-        instance-config (reduce
-                          (fn [result [org-id instance-specific-config]]
-                            (assoc result org-id
-                                          (merge {:org-id org-id
-                                                  :lock (ReentrantLock.)}
-                                            (create-db-pool config org-id)
-                                            (read-remote-api-credentials (-> config :flow-server-config-repo :local-path) org-id)
-                                            instance-specific-config)))
-                          {}
-                          (:instances config))]
-
-    (assoc config
-      :instances instance-config
-      :config-file-name config-file-name)))
+  (let [config (aero/read-config config-file-name)]
+    (assoc config :config-file-name config-file-name)))
 
 (defn update-log-level [previous-log-level next-log-level]
   (if (= previous-log-level next-log-level)

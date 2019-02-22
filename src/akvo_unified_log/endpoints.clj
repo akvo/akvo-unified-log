@@ -4,7 +4,8 @@
             [akvo-unified-log.scheduler :as sch]
             [iapetos.core :as prometheus]
             [liberator.core :refer (defresource)]
-            [taoensso.timbre :as log]))
+            [taoensso.timbre :as log]
+            [akvo-unified-log.migrations :as migrations]))
 
 (defresource status [config]
   :available-media-types ["application/json"]
@@ -13,6 +14,29 @@
   (fn [ctx]
     {:instances (keys (:instances @config))
      :scheduler (map #(select-keys % [:created-at :desc :initial-delay]) (sch/scheduled-jobs))}))
+
+(defn create-new-config!
+  [config org-id]
+  (config/clone-flow-server-config (:flow-server-config-repo @config))
+  (swap! config (fn [old-config]
+                  (if (get-in old-config [:instances org-id])
+                    old-config
+                    (assoc-in old-config [:instances org-id]
+                      (delay
+                        (let [new-config (config/instance-config old-config org-id)]
+                          (migrations/migrate new-config old-config)
+                          new-config)))))))
+
+(defn get-org-config [config org-id]
+  (get-in @config [:instances org-id]))
+
+(defn get-or-create-config! [config org-id]
+  (force
+    (or
+      (get-org-config config org-id)
+      (do
+        (create-new-config! config org-id)
+        (get-org-config config org-id)))))
 
 (defresource event-notification [config]
   :available-media-types ["application/json"]
@@ -26,12 +50,11 @@
           false)))
   :post!
   (fn [ctx]
-    (let [org-id (:org-id ctx)
-          org-config (get-in @config [:instances org-id])]
+    (let [org-id (:org-id ctx)]
       (prometheus/inc config/metrics-collector :event-notifications {:tenant org-id})
-      (if org-config
-        (select-keys (sch/schedule org-id (fn [] (db/fetch-and-insert-new-events org-config))) [:created-at])
-        (log/debugf "Notification from %s ignored" org-id))))
+      (select-keys (sch/schedule org-id (fn []
+                                          (let [org-config (get-or-create-config! config org-id)]
+                                            (db/fetch-and-insert-new-events org-config)))) [:created-at])))
   :handle-exception
   (fn [ctx]
     (log/error (:exception ctx))))
