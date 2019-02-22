@@ -9,7 +9,8 @@
             [cheshire.core :as json]
             [clojure.java.jdbc :as jdbc]
             [aero.core :as aero]
-            [akvo-unified-log.config :as config])
+            [akvo-unified-log.config :as config]
+            [clojure.string :as str])
   (:import (com.google.appengine.api.datastore Query DatastoreService Entity)))
 
 (defn insert!
@@ -44,17 +45,24 @@
 (defn db-spec []
   (config/db-uri (aero/read-config "dev/dev-config.edn") "example"))
 
+(defn maybe-query-db [query]
+  (try
+    (jdbc/query (db-spec) query)
+    (catch Exception e
+      (when-not (str/includes? (.getMessage e) "database \"u_example\" does not exist")
+        (throw e)))))
+
 (defn last-log-position []
   (or
     (->
-      (jdbc/query (db-spec) "select max(id) from event_log")
+      (maybe-query-db "select max(id) from event_log")
       first
       :max)
     0))
 
 (defn events-since [position]
   (->>
-    (jdbc/query (db-spec) ["select * from event_log where id > ?" position])
+    (maybe-query-db ["select * from event_log where id > ?" position])
     (map (fn [x] (update x :payload (fn [content]
                                       (json/parse-string (.getValue content) true)))))
     (map (comp :timestamp :context :payload))
