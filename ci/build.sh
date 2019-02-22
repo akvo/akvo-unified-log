@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e
+set -eu
 
 function log {
    echo "$(date +"%T") - INFO - $*"
@@ -9,8 +9,13 @@ function log {
 export PROJECT_NAME=akvo-lumen
 BRANCH_NAME="${TRAVIS_BRANCH:=unknown}"
 
-if [ -z "$TRAVIS_COMMIT" ]; then
+if [ -z "${TRAVIS_COMMIT:-}" ]; then
     export TRAVIS_COMMIT=local
+fi
+
+if [[ ! "${TRAVIS_TAG:-}" =~ promote-.* ]]; then
+    log "Skipping build as it is a prod promotion"
+    exit 0
 fi
 
 log Building backend dev container
