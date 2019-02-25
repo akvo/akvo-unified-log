@@ -34,7 +34,7 @@
       (metrics "insert-events" config
         (insert<! {:payload event} {:connection (:jdbc-spec config)}))
       (catch PSQLException e
-        (log/error (.getMessage e)))))
+        (log/error "Tenant:" (:org-id config) ", error:" (.getMessage e)))))
   (count events))
 
 (defn datastore-spec [org-config]
