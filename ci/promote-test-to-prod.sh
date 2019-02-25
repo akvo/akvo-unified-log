@@ -38,15 +38,10 @@ log "See https://github.com/akvo/akvo-unified-log/compare/$PROD_VERSION..$TEST_V
 
 TAG_NAME="promote-$(date +"%Y%m%d-%H%M%S")"
 
-read -r -e -p "Are you sure you want to promote to production? [yn] " CONFIRM
-if [[ "${CONFIRM}" != "y" ]]; then
-    log "Nothing done"
-    switch_back
-    exit 1
-else
-    log "Tagging with $TAG_NAME and pushing to Github. Travis will deploy."
-    git tag $TAG_NAME $TEST_VERSION
-    git push origin $TAG_NAME
-fi
+log "To deploy, run: "
+echo "----------------------------------------------"
+echo "git tag $TAG_NAME $TEST_VERSION"
+echo "git push origin $TAG_NAME"
+echo "----------------------------------------------"
 
 switch_back
