@@ -29,4 +29,14 @@ else
   cp /etc/ssl/certs/ca-certificates.crt /root/.postgresql/root.crt
 fi
 
-java -jar akvo-unilog.jar /etc/config/akvo-unilog/config.edn
+_term() {
+  echo "Caught SIGTERM signal!"
+  kill -TERM "$child" 2>/dev/null
+}
+
+trap _term SIGTERM
+
+java -jar akvo-unilog.jar /etc/config/akvo-unilog/config.edn &
+
+child=$!
+wait "$child"
