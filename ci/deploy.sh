@@ -35,9 +35,9 @@ if [[ "${TRAVIS_TAG:-}" =~ promote-.* ]]; then
     gcloud container clusters get-credentials production
     ENVIRONMENT=production
     POD_CPU_REQUESTS="400m"
-    POD_CPU_LIMITS="10000m"
-    POD_MEM_REQUESTS="5120Mi"
-    POD_MEM_LIMITS="5632Mi"
+    POD_CPU_LIMITS="2000m"
+    POD_MEM_REQUESTS="512Mi"
+    POD_MEM_LIMITS="512Mi"
 else
     log Environment is test
     gcloud container clusters get-credentials test
