@@ -62,6 +62,7 @@ sed -e "s/\$TRAVIS_COMMIT/$TRAVIS_COMMIT/" \
   ci/akvo-unilog.yaml.template > akvo-unilog.yaml
 
 kubectl apply -f akvo-unilog.yaml
+kubectl apply -f ci/grafana/dashboard.yaml
 
 ci/wait-for-k8s-deployment-to-be-ready.sh
 
