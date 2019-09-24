@@ -6,12 +6,12 @@ starttime=`date +%s`
 
 while [ $(( $(date +%s) - 300 )) -lt ${starttime} ]; do
 
-    consumer_status=`kubectl get pods -l "akvo-unilog-version=$TRAVIS_COMMIT,run=akvo-unilog" -ao jsonpath='{range .items[*].status.containerStatuses[*]}{@.name}{" ready="}{@.ready}{"\n"}{end}'`
+    consumer_status=`kubectl get pods -l "akvo-unilog-version=$TRAVIS_COMMIT,run=akvo-unilog" -o jsonpath='{range .items[*].status.containerStatuses[*]}{@.name}{" ready="}{@.ready}{"\n"}{end}'`
 
 # We want to make sure that when we hit the ingress from the integration test, we are hitting the new containers,
 # hence we wait until the old pods are gone.
 # Another possibility could be to check that the service is pointing just to the new containers.
-    old_consumer_status=`kubectl get pods -l "akvo-unilog-version!=$TRAVIS_COMMIT,run=akvo-unilog" -ao jsonpath='{range .items[*].status.containerStatuses[*]}{@.name}{" ready="}{@.ready}{"\n"}{end}'`
+    old_consumer_status=`kubectl get pods -l "akvo-unilog-version!=$TRAVIS_COMMIT,run=akvo-unilog" -o jsonpath='{range .items[*].status.containerStatuses[*]}{@.name}{" ready="}{@.ready}{"\n"}{end}'`
 
     if [[ ${consumer_status} =~ "ready=true" ]] && ! [[ ${old_consumer_status} =~ "ready" ]]; then
         exit 0
@@ -23,6 +23,6 @@ done
 
 echo "Containers not ready after 5 minutes or old containers not stopped"
 
-kubectl get pods -l "run=akvo-unilog-version" -ao jsonpath='{range .items[*].status.containerStatuses[*]}{@.name}{" ready="}{@.ready}{"\n"}{end}'
+kubectl get pods -l "run=akvo-unilog-version" -o jsonpath='{range .items[*].status.containerStatuses[*]}{@.name}{" ready="}{@.ready}{"\n"}{end}'
 
 exit 1
