@@ -6,3 +6,5 @@ profiles.clj
 target/
 vagrant/.vagrant/
 \#*#
+.idea
+akvo-unified-log.iml
