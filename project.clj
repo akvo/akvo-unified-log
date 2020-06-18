@@ -14,6 +14,7 @@
                  [ragtime "0.8.0"]
                  [yesql "0.5.3"]
                  [hikari-cp "2.6.0"]
+                 [com.google.cloud.sql/postgres-socket-factory "1.0.16"]
 
                  ;; GAE SDK
                  [com.google.appengine/appengine-tools-sdk "1.9.71"]
