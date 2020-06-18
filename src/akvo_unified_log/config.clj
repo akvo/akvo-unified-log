@@ -68,17 +68,17 @@
   (str tenant-database-prefix org-id))
 
 (defn db-uri [{:keys [database-host database-user database-password tenant-database-prefix cloud-sql-instance]} org-id]
-  (if cloud-sql-instance
-    (format "jdbc:postgresql://not_needed/%s?ssl=false&user=%s&password=%s&cloudSqlInstance=%s&socketFactory=com.google.cloud.sql.postgres.SocketFactory"
-      (event-log-tenant-db-name tenant-database-prefix org-id)
-      (URLEncoder/encode database-user)
-      (URLEncoder/encode database-password)
-      cloud-sql-instance)
-    (format "jdbc:postgresql://%s:5432/%s?ssl=true&user=%s&password=%s"
-      database-host
-      (event-log-tenant-db-name tenant-database-prefix org-id)
-      (URLEncoder/encode database-user)
-      (URLEncoder/encode database-password))))
+  (let [fragment (format "%s?user=%s&password=%s"
+                   (event-log-tenant-db-name tenant-database-prefix org-id)
+                   (URLEncoder/encode database-user)
+                   (URLEncoder/encode database-password))]
+    (if cloud-sql-instance
+      (format "jdbc:postgresql://not_needed/%s&ssl=false&cloudSqlInstance=%s&socketFactory=com.google.cloud.sql.postgres.SocketFactory"
+        fragment
+        cloud-sql-instance)
+      (format "jdbc:postgresql://%s:5432/%s&ssl=true"
+        database-host
+        fragment))))
 
 (defn create-db-pool [config org-id]
   {:database-name (event-log-tenant-db-name (:tenant-database-prefix config) org-id)
