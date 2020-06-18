@@ -43,7 +43,7 @@
      :form-params {:orgId "example"}}))
 
 (defn db-spec []
-  (config/db-uri (aero/read-config "dev/dev-config.edn") "example"))
+  (config/org-db-uri (aero/read-config "dev/dev-config.edn") "example"))
 
 (defn maybe-query-db [query]
   (try
