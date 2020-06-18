@@ -67,9 +67,9 @@
 (defn event-log-tenant-db-name [tenant-database-prefix org-id]
   (str tenant-database-prefix org-id))
 
-(defn db-uri [{:keys [database-host database-user database-password tenant-database-prefix cloud-sql-instance]} org-id]
+(defn db-uri [{:keys [database-host database-user database-password cloud-sql-instance database-name]}]
   (let [fragment (format "%s?user=%s&password=%s"
-                   (event-log-tenant-db-name tenant-database-prefix org-id)
+                   database-name
                    (URLEncoder/encode database-user)
                    (URLEncoder/encode database-password))]
     (if cloud-sql-instance
@@ -80,10 +80,13 @@
         database-host
         fragment))))
 
+(defn org-db-uri [{:keys [tenant-database-prefix] :as config} org-id]
+  (db-uri (assoc config :database-name (event-log-tenant-db-name tenant-database-prefix org-id))))
+
 (defn create-db-pool [config org-id]
   {:database-name (event-log-tenant-db-name (:tenant-database-prefix config) org-id)
    :jdbc-spec {:datasource
-               (hikari/make-datasource {:jdbc-url (db-uri config org-id)
+               (hikari/make-datasource {:jdbc-url (org-db-uri config org-id)
                                         :idle-timeout 300000
                                         :minimum-idle 0
                                         :configure (fn [^HikariConfig config]

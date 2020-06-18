@@ -7,7 +7,7 @@
   (testing "db-uri pre-google-cloud"
     (is
       (= "jdbc:postgresql://some-host.com:5432/u_akvoflow-uat1?user=%2C%3B&password=%40%40&ssl=true"
-        (config/db-uri
+        (config/org-db-uri
           {:database-host "some-host.com"
            :database-name "not used here as it depends on the org-id param"
            :database-password "@@"
@@ -17,7 +17,7 @@
   (testing "db-uri with google-cloud"
     (is
       (= "jdbc:postgresql://not_needed/u_akvoflow-uat1?user=%2C%3B&password=%40%40&ssl=false&cloudSqlInstance=some&socketFactory=com.google.cloud.sql.postgres.SocketFactory"
-        (config/db-uri
+        (config/org-db-uri
           {:database-host "should be ignored"
            :database-name "lumen"
            :database-password "@@"

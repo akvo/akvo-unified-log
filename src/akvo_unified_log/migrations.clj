@@ -2,7 +2,8 @@
   (:require [clojure.java.jdbc :as jdbc]
             [ragtime.repl]
             [ragtime.jdbc]
-            [taoensso.timbre :as log]))
+            [taoensso.timbre :as log]
+            [akvo-unified-log.config :as config]))
 
 (defn database-exists? [db-spec db-name]
   (not (empty? (jdbc/query db-spec
@@ -27,18 +28,8 @@
                     timestamp_idx ON
                     event_log(cast(payload->'context'->>'timestamp' AS numeric));"]))
 
-(defn master-database-spec [config]
-  {:subprotocol "postgresql"
-   :subname (format "//%s:%s/%s"
-              (:database-host config)
-              (:database-port config 5432)
-              (:database-name config))
-   :user (:database-user config)
-   :ssl true
-   :password (:database-password config)})
-
 (defn migrate [org-config config]
-  (let [master-db-spec (master-database-spec config)
+  (let [master-db-spec (config/db-uri config)
         db-spec (:jdbc-spec org-config)]
     (when-not (database-exists? master-db-spec (:database-name org-config))
       (create-event-log-db master-db-spec (:database-name org-config))
