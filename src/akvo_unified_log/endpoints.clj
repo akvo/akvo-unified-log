@@ -54,9 +54,12 @@
       (prometheus/inc config/metrics-collector :event-notifications {:tenant org-id})
       (select-keys
         (sch/schedule org-id (fn [delay]
-                               (let [org-config (get-or-create-config! config org-id)]
-                                 (db/fetch-and-insert-new-events
-                                   (assoc org-config :metrics/pull-delay delay)))))
+                               (try
+                                 (let [org-config (get-or-create-config! config org-id)]
+                                   (db/fetch-and-insert-new-events
+                                     (assoc org-config :metrics/pull-delay delay)))
+                                 (catch Throwable e
+                                   (log/error e)))))
         [:created-at])))
   :handle-exception
   (fn [ctx]
