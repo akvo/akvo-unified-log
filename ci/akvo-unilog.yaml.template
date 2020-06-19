@@ -53,6 +53,8 @@ spec:
              configMapKeyRef:
                name: akvo
                key: environment
+         - name: GOOGLE_APPLICATION_CREDENTIALS
+           value: "/secrets/cloudsql/credentials.json"
         volumeMounts:
           - name: "secret-config"
             mountPath: /root/.ssh/id_rsa
@@ -65,6 +67,10 @@ spec:
           - name: "secret-config"
             mountPath: "/etc/config/akvo-unilog/config.edn"
             subPath: "config.edn"
+          - name: "secret-config"
+            mountPath: "/secrets/cloudsql/credentials.json"
+            subPath: "cloud-database-service-account.json"
+            readOnly: true
         livenessProbe:
           httpGet:
             path: /healthz
