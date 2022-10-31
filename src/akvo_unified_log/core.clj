@@ -1,9 +1,7 @@
 (ns akvo-unified-log.core
   (:require [akvo-unified-log.config :as config]
-            [akvo-unified-log.db :refer :all]
             [akvo-unified-log.endpoints :as endpoints]
             [akvo-unified-log.scheduler :as scheduler]
-            [akvo-unified-log.migrations :as migrations]
             [clojure.tools.nrepl.server :as nrepl]
             [compojure.core :refer (routes GET POST)]
             [compojure.route :refer (not-found)]
@@ -28,7 +26,7 @@
     (log/merge-config! {:level (:log-level config :info)
                         :output-fn (partial log/default-output-fn
                                      {:stacktrace-fonts {}})})
-    (let [port (Integer. (:port config 3030))
+    (let [port (:port config 3030)
           config-atom (atom config)
           server (jetty/run-jetty (-> (app config-atom)
                                     (ring/wrap-metrics config/metrics-collector)
@@ -44,15 +42,15 @@
 
 
 (comment
- 
+
   (reset! (:config-atom (deref system)) (config/read-config "dev/dev-config.edn"))
 
   (.stop (-> system deref :jetty))
-  (do
-    (.stop j)
-    (def j (jetty/run-jetty (-> (app (:config-atom (deref system)))
+  (def j (jetty/run-jetty (-> (app (:config-atom (deref system)))
                               (ring/wrap-metrics config/metrics-collector)
                               wrap-params
                               wrap-json-body)
-             {:port 3030 :join? false})))
-  )
+                          {:port 3030 :join? false}))
+  (.stop j)
+
+  ,)

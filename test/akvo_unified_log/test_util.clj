@@ -1,11 +1,6 @@
 (ns akvo-unified-log.test-util
-  (:require [clj-http.client :as http]
-            [aero.core :as aero]
-            [cheshire.core :as json]
-            [clojure.test :as clj-test]
-            [akvo.commons.config :as config]
-            [taoensso.timbre :as log])
-  (:import (java.net Socket)))
+  (:require [clojure.test :as clj-test])
+  (:import [java.net Socket]))
 
 (def unilog-url "http://localhost:3030")
 (def gae-local {:hostname "localhost"
@@ -46,7 +41,7 @@
               (clojure.test/report ev#))
             result#))))))
 
-(defn wait-for-server [host port]
+(defn wait-for-server [^String host port]
   (try-for (str "Nobody listening at " host ":" port) 60
     (with-open [_ (Socket. host (int port))]
       true)))

@@ -3,7 +3,6 @@
             [akvo.commons.git :as git]
             [aero.core :as aero]
             [taoensso.timbre :as log]
-            [environ.core :refer [env]]
             [iapetos.collector.ring :as ring]
             [iapetos.collector.exceptions :as ex]
             [iapetos.core :as prometheus]
@@ -67,11 +66,11 @@
 (defn event-log-tenant-db-name [tenant-database-prefix org-id]
   (str tenant-database-prefix org-id))
 
-(defn db-uri [{:keys [database-host database-user database-password cloud-sql-instance database-name]}]
+(defn db-uri [{:keys [database-host ^String database-user ^String database-password cloud-sql-instance database-name]}]
   (let [fragment (format "%s?user=%s&password=%s"
                    database-name
-                   (URLEncoder/encode database-user)
-                   (URLEncoder/encode database-password))]
+                   (URLEncoder/encode database-user "UTF-8")
+                   (URLEncoder/encode database-password "UTF-8"))]
     (if cloud-sql-instance
       (format "jdbc:postgresql://not_needed/%s&ssl=false&cloudSqlInstance=%s&socketFactory=com.google.cloud.sql.postgres.SocketFactory"
         fragment

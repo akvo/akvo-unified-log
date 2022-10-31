@@ -6,8 +6,9 @@
             [akvo-unified-log.config :as config]))
 
 (defn database-exists? [db-spec db-name]
-  (not (empty? (jdbc/query db-spec
-                 ["SELECT 1 from pg_database WHERE datname=?" db-name]))))
+  (boolean
+   (seq (jdbc/query db-spec
+                    ["SELECT 1 from pg_database WHERE datname=?" db-name]))))
 
 (defn create-event-log-db [db-spec org-id]
   (log/infof "Creating database %s" org-id)

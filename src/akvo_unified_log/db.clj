@@ -8,8 +8,11 @@
             [iapetos.collector.exceptions :as ex]
             [akvo-unified-log.config :as config])
   (:import [org.postgresql.util PSQLException]
-           (java.util.concurrent.locks Lock)))
+           [java.util.concurrent.locks Lock]
+           [com.google.appengine.api.datastore Entity Text PreparedQuery QueryResultList]))
 
+(declare last-timestamp)
+(declare insert<!)
 (defqueries "db.sql")
 
 (defmacro metrics
@@ -42,11 +45,11 @@
     :hostname (:hostname org-config (str (:org-id org-config) ".appspot.com"))
     :port (:port org-config 443)))
 
-(defn payload [entity]
+(defn payload [^Entity entity]
   (or (.getProperty entity "payload")
-    (.getValue (.getProperty entity "payloadText"))))
+    (.getValue ^Text (.getProperty entity "payloadText"))))
 
-(defn query-gae [config query & [opts]]
+(defn query-gae ^QueryResultList [config ^PreparedQuery query & [opts]]
   (metrics "query-gae" config
     (.asQueryResultList query
       (query/fetch-options

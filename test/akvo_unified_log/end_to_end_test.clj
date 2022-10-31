@@ -1,8 +1,7 @@
 (ns akvo-unified-log.end-to-end-test
   {:integration true}
-  (:require [clojure.test :refer :all]
+  (:require [clojure.test :refer [deftest testing is use-fixtures]]
             [akvo-unified-log.test-util :as test-util]
-            [akvo-unified-log.db :as db]
             [akvo.commons.gae :as gae]
             [akvo.commons.gae.query :as query]
             [clj-http.client :as http]
@@ -11,16 +10,17 @@
             [aero.core :as aero]
             [akvo-unified-log.config :as config]
             [clojure.string :as str])
-  (:import (com.google.appengine.api.datastore Query DatastoreService Entity)))
+  (:import [com.google.appengine.api.datastore DatastoreService Entity QueryResultIterable]
+           [org.postgresql.util PGobject]))
 
 (defn insert!
-  [^DatastoreService ds kind props]
+  [^DatastoreService ds ^String kind props]
   (let [entity (Entity. kind)]
     (doseq [k (keys props)]
       (.setProperty entity (name k) (props k)))
     (.put ds entity)))
 
-(defn add-event [timestamp]
+(defn add-event [^long timestamp]
   (gae/with-datastore [ds test-util/gae-local]
     (insert! ds "EventQueue"
       {"createdDateTime" (java.util.Date. timestamp)
@@ -30,7 +30,8 @@
   (test-util/try-for "GAE took too long to sync" 10
     (= 1
       (gae/with-datastore [ds test-util/gae-local]
-        (count (iterator-seq (.iterator (query/result ds
+        (count (iterator-seq (.iterator ^QueryResultIterable
+                                        (query/result ds
                                           {:kind "EventQueue"
                                            :filter (query/= "createdDateTime" (java.util.Date. timestamp))}))))))))
 
@@ -63,7 +64,7 @@
 (defn events-since [position]
   (->>
     (maybe-query-db ["select * from event_log where id > ?" position])
-    (map (fn [x] (update x :payload (fn [content]
+    (map (fn [x] (update x :payload (fn [^PGobject content]
                                       (json/parse-string (.getValue content) true)))))
     (map (comp :timestamp :context :payload))
     sort))

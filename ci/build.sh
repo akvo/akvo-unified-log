@@ -18,6 +18,14 @@ if [[ "${TRAVIS_TAG:-}" =~ promote-.* ]]; then
     exit 0
 fi
 
+log Linting backend code with clj-kondo
+docker run \
+	   --rm \
+	   --volume "$(pwd):/app" \
+	   --workdir /app \
+	   cljkondo/clj-kondo:2022.10.14-alpine \
+	   clj-kondo --lint src test dev
+
 log Building backend dev container
 docker build --rm=false -t akvo-unilog-dev:develop . -f Dockerfile-dev
 log Running backend test and uberjar
@@ -30,6 +38,6 @@ docker tag eu.gcr.io/${PROJECT_NAME}/akvo-unilog:$TRAVIS_COMMIT eu.gcr.io/${PROJ
 log Starting docker compose env
 docker-compose -p akvo-unilog-ci -f docker-compose.yml -f docker-compose.ci.yml up -d --build
 log Running integration tests
-docker-compose -p akvo-unilog-ci -f docker-compose.yml -f docker-compose.ci.yml run --no-deps tests dev/start-dev-env.sh integration-test
+docker-compose -p akvo-unilog-ci -f docker-compose.yml -f docker-compose.ci.yml exec -T tests dev/start-dev-env.sh integration-test
 
 log Done

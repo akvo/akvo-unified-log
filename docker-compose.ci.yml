@@ -19,6 +19,6 @@ services:
       - pg-data:/pg-certs:ro
     depends_on:
       - unilog
-    command: "true"
+    command: tail -f /dev/null
     environment:
       - PGSSLROOTCERT=/pg-certs/server.crt

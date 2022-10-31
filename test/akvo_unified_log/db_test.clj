@@ -1,7 +1,7 @@
 (ns akvo-unified-log.db-test
   (:require
     [akvo-unified-log.config :as config]
-    [clojure.test :refer :all]))
+    [clojure.test :refer [deftest testing is]]))
 
 (deftest db-uri
   (testing "db-uri pre-google-cloud"

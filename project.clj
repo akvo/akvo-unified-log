@@ -4,7 +4,8 @@
   :license {:name "GNU Affero General Public License"
             :url "https://www.gnu.org/licenses/agpl"}
   :plugins [[lein-environ "1.0.0"]
-            [lein-ancient "0.6.15"]]
+            [lein-ancient "0.6.15"]
+            [jonase/eastwood "1.3.0"]]
   :dependencies [[org.clojure/clojure "1.10.0"]
                  [org.akvo/commons "0.4.6" :exclusions [[org.clojure/tools.reader]]]
 

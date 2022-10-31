@@ -3,15 +3,19 @@
             [akvo-unified-log.db :as db]
             [akvo-unified-log.scheduler :as sch]
             [iapetos.core :as prometheus]
-            [liberator.core :refer (defresource)]
+            [liberator.core :refer [defresource]]
             [taoensso.timbre :as log]
             [akvo-unified-log.migrations :as migrations]))
+
+(declare status)
+(declare event-notification)
+(declare reload-config)
 
 (defresource status [config]
   :available-media-types ["application/json"]
   :allowed-methods [:get]
   :handle-ok
-  (fn [ctx]
+  (fn [_]
     {:instances (keys (:instances @config))
      :scheduler (map #(select-keys % [:created-at :desc :initial-delay]) (sch/scheduled-jobs))}))
 
@@ -69,5 +73,5 @@
   :available-media-types ["application/json"]
   :allowed-methods [:post]
   :post!
-  (fn [ctx]
+  (fn [_]
     (reset! config (config/reload-config @config))))
